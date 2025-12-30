@@ -1,19 +1,15 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-
 import { useAuth } from "../../app/providers/AuthProvider";
-import { useEffect } from "react";
-
-const { token } = useAuth();
-
-useEffect(() => {
-  if (token) navigate("/dashboard");
-}, [token, navigate]);
-
 
 export default function Landing() {
   const navigate = useNavigate();
+  const { token } = useAuth();
+
+  useEffect(() => {
+    if (token) navigate("/dashboard", { replace: true });
+  }, [token, navigate]);
 
   return (
     <Box
@@ -26,40 +22,14 @@ export default function Landing() {
       }}
     >
       <Stack spacing={3} alignItems="center">
-        {/* Logo */}
-        <Box
-          component="img"
-          src="/logo.png"
-          alt="Innerwall Logo"
-          sx={{
-            height: 64,
-            mb: 1,
-          }}
-        />
-
-        {/* Optional tagline */}
-        <Typography
-          sx={{
-            color: "text.secondary",
-            fontSize: 14,
-            maxWidth: 420,
-            textAlign: "center",
-          }}
-        >
-          Monitor user activity, logs, screenshots, and behavioral insights securely.
+        <Box component="img" src="/logo.png" alt="Logo" sx={{ height: 64, mb: 1 }} />
+        <Typography sx={{ color: "text.secondary", fontSize: 14, maxWidth: 420, textAlign: "center" }}>
+          Monitor logs, screenshots, user activity insights, and RBAC-scoped views — all in one place.
         </Typography>
-
-        {/* Begin Button */}
         <Button
           variant="contained"
           size="large"
-          sx={{
-            mt: 2,
-            px: 6,
-            py: 1.4,
-            fontWeight: 700,
-            borderRadius: 3,
-          }}
+          sx={{ mt: 2, px: 6, py: 1.4, fontWeight: 700, borderRadius: 3 }}
           onClick={() => navigate("/login")}
         >
           Begin

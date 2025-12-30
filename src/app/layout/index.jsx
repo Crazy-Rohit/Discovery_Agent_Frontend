@@ -1,7 +1,7 @@
 import React from "react";
 import { Box } from "@mui/material";
-import Sidebar from "./Sidebar";
-import Topbar from "./Topbar";
+//import Sidebar from "./Sidebar";
+//import Topbar from "./Topbar";
 
 export default function DashboardLayout({ children }) {
   return (
