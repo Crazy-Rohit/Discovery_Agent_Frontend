@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   Box,
   Button,
@@ -6,176 +6,190 @@ import {
   Stack,
   TextField,
   Typography,
-  InputAdornment,
-  IconButton,
+  Link,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Link,
+  InputAdornment,
+  IconButton,
 } from "@mui/material";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
-import { useAuth } from "../../app/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
+
+import { AuthContext } from "../../app/providers/AuthProvider";
 import { forgotPasswordApi } from "../../features/auth/auth.api";
 
 export default function Login() {
-  const { login } = useAuth();
   const nav = useNavigate();
+  const { login } = useContext(AuthContext);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
-  // password eye
-  const [showPass, setShowPass] = useState(false);
-
-  // forgot password modal
+  // Forgot password dialog state
   const [fpOpen, setFpOpen] = useState(false);
-  const [fpEmail, setFpEmail] = useState("");
-  const [fpBusy, setFpBusy] = useState(false);
+  const [fpPass, setFpPass] = useState("");
+  const [fpPass2, setFpPass2] = useState("");
   const [fpMsg, setFpMsg] = useState("");
+  const [fpErr, setFpErr] = useState("");
+  const [fpBusy, setFpBusy] = useState(false);
+  const [fpShowPass, setFpShowPass] = useState(false);
+  const [fpShowPass2, setFpShowPass2] = useState(false);
 
   async function onSubmit(e) {
     e.preventDefault();
     setErr("");
     setBusy(true);
     try {
-      await login(email, password); // email-only login
-      nav("/dashboard", { replace: true });
+      await login(email.trim().toLowerCase(), password);
+      nav("/dashboard");
     } catch (e2) {
-      const msg =
-        e2?.response?.data?.error ||
-        e2?.message ||
-        "Login failed. Please check email/password.";
-      setErr(msg);
+      setErr(e2?.response?.data?.error || e2?.message || "Login failed");
     } finally {
       setBusy(false);
     }
   }
 
-  async function onForgotPassword() {
+  async function handleForgotSubmit() {
+    setFpErr("");
     setFpMsg("");
-    setFpBusy(true);
+
+    const emailValue = (email || "").trim().toLowerCase();
+    if (!emailValue) return setFpErr("Please type your company email on the login screen first.");
+    if (!fpPass) return setFpErr("New password is required.");
+    if (fpPass.length < 4) return setFpErr("Password must be at least 4 characters.");
+    if (fpPass !== fpPass2) return setFpErr("Passwords do not match.");
+
     try {
-      const data = await forgotPasswordApi({ email: fpEmail });
-      setFpMsg(data?.message || "If the account exists, reset instructions were initiated.");
+      setFpBusy(true);
+      const data = await forgotPasswordApi({ email: emailValue, new_password: fpPass });
+      setFpMsg(data?.message || "Password updated. Please login.");
+      setTimeout(() => setFpOpen(false), 900);
     } catch (e) {
-      setFpMsg(e?.response?.data?.error || "Could not start password reset.");
+      setFpErr(e?.response?.data?.error || "Failed to update password.");
     } finally {
       setFpBusy(false);
     }
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "grid", gridTemplateColumns: { xs: "1fr", md: "1.1fr 0.9fr" } }}>
-      <Box sx={{ display: { xs: "none", md: "flex" }, p: 6, bgcolor: "background.default", alignItems: "center" }}>
-        <Box>
-          <Typography variant="h3" sx={{ fontWeight: 800, mb: 2 }}>
-            Innerwall-style Activity Dashboard
-          </Typography>
-          <Typography sx={{ color: "text.secondary", maxWidth: 520 }}>
-            Monitor logs, screenshots, user activity insights, and RBAC-scoped views — all in one place.
-          </Typography>
-        </Box>
-      </Box>
+    <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", p: 3 }}>
+      <Paper sx={{ width: "100%", maxWidth: 520, p: 4 }}>
+        <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
+          Sign in
+        </Typography>
+        <Typography sx={{ color: "text.secondary", mb: 3 }}>
+          Login with your company email.
+        </Typography>
 
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", p: 3 }}>
-        <Paper sx={{ width: "100%", maxWidth: 420, p: 4 }}>
-          <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
-            Sign in
-          </Typography>
-          <Typography sx={{ color: "text.secondary", mb: 3 }}>
-            Use your company email and password.
-          </Typography>
+        <form onSubmit={onSubmit}>
+          <Stack spacing={2.2}>
+            <TextField label="Company Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
 
-          <form onSubmit={onSubmit}>
-            <Stack spacing={2.2}>
-              <TextField
-                label="Company Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+            <TextField
+              label="Password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowPassword((s) => !s)} edge="end">
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
 
-              <TextField
-                label="Password"
-                type={showPass ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowPass((s) => !s)} edge="end">
-                        {showPass ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
+            {err ? <Typography color="error">{err}</Typography> : null}
+
+            <Button type="submit" variant="contained" size="large" disabled={busy}>
+              {busy ? "Signing in..." : "Sign in"}
+            </Button>
+
+            <Stack direction="row" justifyContent="space-between">
+              <Link
+                component="button"
+                type="button"
+                underline="hover"
+                onClick={() => {
+                  setFpErr("");
+                  setFpMsg("");
+                  setFpPass("");
+                  setFpPass2("");
+                  setFpOpen(true);
                 }}
-              />
+                sx={{ fontSize: 14 }}
+              >
+                Forgot password?
+              </Link>
 
-              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                <Link
-                  component="button"
-                  type="button"
-                  underline="hover"
-                  onClick={() => {
-                    setFpEmail(email || "");
-                    setFpMsg("");
-                    setFpOpen(true);
-                  }}
-                  sx={{ fontSize: 14 }}
-                >
-                  Forgot password?
-                </Link>
-
-                <Link
-                  component="button"
-                  type="button"
-                  underline="hover"
-                  onClick={() => nav("/register")}
-                  sx={{ fontSize: 14 }}
-                >
-                  Not registered yet? Create account
-                </Link>
-              </Box>
-
-              {err ? <Typography color="error">{err}</Typography> : null}
-
-              <Button type="submit" variant="contained" size="large" disabled={busy}>
-                {busy ? "Signing in..." : "Sign in"}
-              </Button>
+              <Link component="button" type="button" underline="hover" onClick={() => nav("/register")} sx={{ fontSize: 14 }}>
+                Create account
+              </Link>
             </Stack>
-          </form>
-        </Paper>
-      </Box>
+          </Stack>
+        </form>
+      </Paper>
 
-      <Dialog open={fpOpen} onClose={() => setFpOpen(false)} fullWidth maxWidth="xs">
-        <DialogTitle>Reset password</DialogTitle>
+      <Dialog open={fpOpen} onClose={() => !fpBusy && setFpOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle>Reset Password</DialogTitle>
+
         <DialogContent>
-          <Typography sx={{ color: "text.secondary", mb: 2 }}>
-            Enter your company email. If the account exists, we’ll initiate a reset.
-          </Typography>
-          <TextField
-            autoFocus
-            fullWidth
-            label="Company Email"
-            value={fpEmail}
-            onChange={(e) => setFpEmail(e.target.value)}
-          />
-          {fpMsg ? (
-            <Typography sx={{ mt: 2 }} color={fpMsg.toLowerCase().includes("could not") ? "error" : "success.main"}>
-              {fpMsg}
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              Password will be updated for the email you typed on the login screen.
             </Typography>
-          ) : null}
+
+            <TextField
+              label="New Password"
+              type={fpShowPass ? "text" : "password"}
+              value={fpPass}
+              onChange={(e) => setFpPass(e.target.value)}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setFpShowPass((s) => !s)}>
+                      {fpShowPass ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              label="Confirm New Password"
+              type={fpShowPass2 ? "text" : "password"}
+              value={fpPass2}
+              onChange={(e) => setFpPass2(e.target.value)}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setFpShowPass2((s) => !s)}>
+                      {fpShowPass2 ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            {fpErr ? <Typography color="error">{fpErr}</Typography> : null}
+            {fpMsg ? <Typography sx={{ color: "success.main" }}>{fpMsg}</Typography> : null}
+          </Stack>
         </DialogContent>
+
         <DialogActions>
-          <Button onClick={() => setFpOpen(false)}>Close</Button>
-          <Button variant="contained" onClick={onForgotPassword} disabled={fpBusy || !fpEmail.trim()}>
-            {fpBusy ? "Submitting..." : "Submit"}
+          <Button onClick={() => setFpOpen(false)} disabled={fpBusy}>Cancel</Button>
+          <Button variant="contained" onClick={handleForgotSubmit} disabled={fpBusy}>
+            {fpBusy ? "Updating..." : "Update Password"}
           </Button>
         </DialogActions>
       </Dialog>

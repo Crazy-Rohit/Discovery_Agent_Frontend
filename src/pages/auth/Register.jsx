@@ -21,51 +21,51 @@ import { registerApi } from "../../features/auth/auth.api";
 export default function Register() {
   const nav = useNavigate();
 
-  // required by your schema
-  const [userMacId, setUserMacId] = useState("");
-  const [companyUsername, setCompanyUsername] = useState(""); // email
+  const [fullName, setFullName] = useState("");
+  const [contactNo, setContactNo] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // optional but in your schema
-  const [department, setDepartment] = useState("");
-  const [pcUsername, setPcUsername] = useState("");
   const [roleKey, setRoleKey] = useState("DEPARTMENT_MEMBER");
+  const [department, setDepartment] = useState("");
 
-  // license fields
   const [licenseAccepted, setLicenseAccepted] = useState(true);
-  const [licenseVersion, setLicenseVersion] = useState("1.0");
 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
-
-  // password eye
   const [showPass, setShowPass] = useState(false);
 
+  const needsDepartment = useMemo(() => roleKey !== "C_SUITE", [roleKey]);
+
   const canSubmit = useMemo(() => {
-    return (
-      userMacId.trim() &&
-      companyUsername.trim() &&
-      password.trim() &&
-      licenseVersion.trim()
-    );
-  }, [userMacId, companyUsername, password, licenseVersion]);
+    if (!fullName.trim() || !contactNo.trim() || !email.trim() || !password.trim()) return false;
+    if (needsDepartment && !department.trim()) return false;
+    return true;
+  }, [fullName, contactNo, email, password, needsDepartment, department]);
 
   async function onSubmit(e) {
     e.preventDefault();
     setErr("");
     setMsg("");
     setBusy(true);
+
     try {
+      const cleanEmail = email.trim().toLowerCase();
+
       const payload = {
-        user_mac_id: userMacId.trim(),
-        company_username: companyUsername.trim().toLowerCase(),
+        email: cleanEmail,
+        company_username: cleanEmail,
         password,
-        department: department.trim(),
-        pc_username: pcUsername.trim(),
+
         role_key: roleKey,
+        department: needsDepartment ? department.trim() : "",
+
+        full_name: fullName.trim(),
+        contact_no: contactNo.trim(),
+
         license_accepted: !!licenseAccepted,
-        license_version: licenseVersion.trim(),
+        license_version: "1.3",
       };
 
       const data = await registerApi(payload);
@@ -85,26 +85,14 @@ export default function Register() {
           Create account
         </Typography>
         <Typography sx={{ color: "text.secondary", mb: 3 }}>
-          Register with your device MAC, company email, and password.
+          Register with your name, company email, and password.
         </Typography>
 
         <form onSubmit={onSubmit}>
           <Stack spacing={2.2}>
-            <TextField
-              label="Device MAC (user_mac_id)"
-              value={userMacId}
-              onChange={(e) => setUserMacId(e.target.value)}
-              placeholder="84-69-93-98-45-5D"
-              required
-            />
-
-            <TextField
-              label="Company Email (company_username)"
-              value={companyUsername}
-              onChange={(e) => setCompanyUsername(e.target.value)}
-              placeholder="name@company.com"
-              required
-            />
+            <TextField label="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+            <TextField label="Contact No" value={contactNo} onChange={(e) => setContactNo(e.target.value)} required />
+            <TextField label="Company Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
 
             <TextField
               label="Password"
@@ -123,49 +111,29 @@ export default function Register() {
               }}
             />
 
-            <TextField
-              label="Department"
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              placeholder="IT"
-            />
-
-            <TextField
-              label="PC Username"
-              value={pcUsername}
-              onChange={(e) => setPcUsername(e.target.value)}
-              placeholder="HP"
-            />
-
-            <TextField
-              select
-              label="Role"
-              value={roleKey}
-              onChange={(e) => setRoleKey(e.target.value)}
-            >
+            <TextField select label="Role" value={roleKey} onChange={(e) => setRoleKey(e.target.value)}>
               <MenuItem value="DEPARTMENT_MEMBER">DEPARTMENT_MEMBER</MenuItem>
               <MenuItem value="DEPARTMENT_HEAD">DEPARTMENT_HEAD</MenuItem>
               <MenuItem value="C_SUITE">C_SUITE</MenuItem>
             </TextField>
 
-            <TextField
-              label="License Version"
-              value={licenseVersion}
-              onChange={(e) => setLicenseVersion(e.target.value)}
-            />
+            {needsDepartment ? (
+              <TextField
+                label="Department"
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                placeholder="IT"
+                required
+              />
+            ) : null}
 
             <FormControlLabel
-              control={
-                <Checkbox
-                  checked={licenseAccepted}
-                  onChange={(e) => setLicenseAccepted(e.target.checked)}
-                />
-              }
+              control={<Checkbox checked={licenseAccepted} onChange={(e) => setLicenseAccepted(e.target.checked)} />}
               label="I accept the license"
             />
 
             {err ? <Typography color="error">{err}</Typography> : null}
-            {msg ? <Typography color="success.main">{msg}</Typography> : null}
+            {msg ? <Typography sx={{ color: "success.main" }}>{msg}</Typography> : null}
 
             <Button type="submit" variant="contained" size="large" disabled={busy || !canSubmit}>
               {busy ? "Creating..." : "Create account"}

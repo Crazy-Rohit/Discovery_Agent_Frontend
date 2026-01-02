@@ -10,5 +10,6 @@ export async function getSummary({ from, to, scope_user, scope_department }) {
   if (scope_department) params.department = scope_department;
 
   const res = await http.get("/api/insights/summary", { params });
-  return res.data;
+return res.data?.data;
+
 }
