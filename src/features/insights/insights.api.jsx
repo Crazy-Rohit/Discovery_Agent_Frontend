@@ -1,15 +1,23 @@
 import { http } from "../../services/http/client";
 
-export async function getSummary({ from, to, scope_user, scope_department }) {
-  const params = {};
-  if (from) params.from = from;
-  if (to) params.to = to;
+export async function getSummary({ from, to } = {}) {
+  const res = await http.get("/api/insights/summary", { params: { from, to } });
+  return res.data.data;
+}
 
-  // optional: pass scope if your backend supports it (safe to keep)
-  if (scope_user) params.user = scope_user;
-  if (scope_department) params.department = scope_department;
+export async function getTop({ from, to, by = "application", limit = 10 } = {}) {
+  const res = await http.get("/api/insights/top", {
+    params: { from, to, by, limit },
+  });
+  return res.data.data;
+}
 
-  const res = await http.get("/api/insights/summary", { params });
-return res.data?.data;
+export async function getTimeseries({ from, to } = {}) {
+  const res = await http.get("/api/insights/timeseries", { params: { from, to } });
+  return res.data.data;
+}
 
+export async function getHourly({ from, to } = {}) {
+  const res = await http.get("/api/insights/hourly", { params: { from, to } });
+  return res.data.data;
 }

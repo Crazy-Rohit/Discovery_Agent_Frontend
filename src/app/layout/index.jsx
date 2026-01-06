@@ -6,9 +6,9 @@ import { Box } from "@mui/material";
 export default function DashboardLayout({ children }) {
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
-      <Sidebar />
+      {/*<Sidebar />*/}
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <Topbar />
+        {/*<Topbar />*/}
         <Box sx={{ p: 3, flex: 1 }}>{children}</Box>
       </Box>
     </Box>
