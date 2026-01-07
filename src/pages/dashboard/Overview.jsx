@@ -1,118 +1,192 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Grid, Stack, Typography } from "@mui/material";
-
-import DateRangeBar from "../../components/filters/DateRangeBar";
-import SummaryCards from "../../components/widgets/SummaryCards";
+import { Box, Grid, Typography, Paper, Chip, CircularProgress } from "@mui/material";
 
 import ChartCard from "../../components/charts/ChartCard";
 import ActivityTrendLine from "../../components/charts/ActivityTrendLine";
 import TopBarChart from "../../components/charts/TopBarChart";
-import CategoryPie from "../../components/charts/CategoryPie";
-import HourlyHeatmap from "../../components/charts/HourlyHeatmap";
 
-import RecentLogsTable from "../../components/widgets/RecentLogsTable";
-import RecentScreenshots from "../../components/widgets/RecentScreenshots";
+import { getInsightsSummary, getInsightsTimeseries, getInsightsTop } from "../../services/analytics";
 
-import { getTop, getTimeseries, getHourly } from "../../features/insights/insights.api";
+import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
+import DesktopWindowsRoundedIcon from "@mui/icons-material/DesktopWindowsRounded";
+import ArticleRoundedIcon from "@mui/icons-material/ArticleRounded";
+import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 
-function isoToday() {
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+function KpiCard({ title, value, icon }) {
+  return (
+    <Paper className="glass glass-hover" elevation={0} sx={{ p: 2, position: "relative", overflow: "hidden" }}>
+      <Box
+        sx={{
+          position: "absolute",
+          inset: "-60px -70px auto auto",
+          width: 220,
+          height: 220,
+          borderRadius: "50%",
+          background: "radial-gradient(circle at 30% 30%, rgba(79,209,196,0.18), transparent 60%)",
+          pointerEvents: "none",
+        }}
+      />
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.2 }}>
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            border: "1px solid rgba(255,255,255,0.12)",
+            background:
+              "radial-gradient(18px 18px at 30% 30%, rgba(79,209,196,0.95), rgba(79,209,196,0.10))",
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
+          {icon}
+        </Box>
+
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="caption" className="muted">
+            {title}
+          </Typography>
+          <Typography sx={{ fontWeight: 950, fontSize: 22, mt: 0.2 }}>{value}</Typography>
+        </Box>
+      </Box>
+    </Paper>
+  );
+}
+
+function formatNumber(n) {
+  const x = Number(n || 0);
+  return x.toLocaleString();
 }
 
 export default function Overview() {
-  const today = useMemo(() => isoToday(), []);
-  const [from, setFrom] = useState(today);
-  const [to, setTo] = useState(today);
+  const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState(null);
+  const [trend, setTrend] = useState({ labels: [], series: [] });
+  const [topSignals, setTopSignals] = useState([]);
+  const [error, setError] = useState("");
 
-  const [trend, setTrend] = useState(null);
-  const [topApps, setTopApps] = useState(null);
-  const [topCats, setTopCats] = useState(null);
-  const [hourly, setHourly] = useState(null);
+  // Later you can wire DateRangeBar -> set params here
+  const queryParams = useMemo(() => ({}), []);
 
   useEffect(() => {
     let mounted = true;
 
-    (async () => {
+    async function load() {
+      setLoading(true);
+      setError("");
+
       try {
-        const [t, a, c, h] = await Promise.all([
-          getTimeseries({ from, to }),
-          getTop({ from, to, by: "application", limit: 8 }),
-          getTop({ from, to, by: "category", limit: 6 }),
-          getHourly({ from, to }),
+        const [s, t, top] = await Promise.all([
+          getInsightsSummary(queryParams),
+          getInsightsTimeseries(queryParams),
+          getInsightsTop({ ...queryParams, by: "category", limit: 10 }),
         ]);
 
         if (!mounted) return;
-        setTrend(t);
-        setTopApps(a);
-        setTopCats(c);
-        setHourly(h);
+
+        setSummary(s || null);
+
+        setTrend({
+          labels: Array.isArray(t?.labels) ? t.labels : [],
+          series: Array.isArray(t?.series) ? t.series : [],
+        });
+
+        setTopSignals(Array.isArray(top?.items) ? top.items : []);
       } catch (e) {
         if (!mounted) return;
-        setTrend(null);
-        setTopApps(null);
-        setTopCats(null);
-        setHourly(null);
+        setError(e?.message || "Failed to load analytics.");
+        setSummary(null);
+        setTrend({ labels: [], series: [] });
+        setTopSignals([]);
+      } finally {
+        if (!mounted) return;
+        setLoading(false);
       }
-    })();
+    }
 
+    load();
     return () => {
       mounted = false;
     };
-  }, [from, to]);
+  }, [queryParams]);
+
+  const totals = summary?.totals || {};
+  const range = summary?.range || {};
+
+  // Backend provides logs, screenshots, unique_users
+  const kpis = [
+    { title: "Active Users", value: formatNumber(totals.unique_users), icon: <PeopleAltRoundedIcon /> },
+    { title: "Logs", value: formatNumber(totals.logs), icon: <ArticleRoundedIcon /> },
+    { title: "Screenshots", value: formatNumber(totals.screenshots), icon: <DesktopWindowsRoundedIcon /> },
+    // Alerts are not provided by backend insights yet => show 0 (you can add later)
+    { title: "Alerts", value: formatNumber(0), icon: <WarningAmberRoundedIcon /> },
+  ];
 
   return (
-    <Stack spacing={2.5}>
-      <Typography variant="h5" sx={{ fontWeight: 900 }}>
-        Dashboard Overview
-      </Typography>
+    <Box>
+      <Box sx={{ mb: 2, display: "flex", alignItems: "end", gap: 2 }}>
+        <Box sx={{ flex: 1 }}>
+          <Typography sx={{ fontWeight: 950, fontSize: 22 }}>System Overview</Typography>
+          <Typography variant="caption" className="muted">
+            Range: {range.from || "—"} to {range.to || "—"}
+          </Typography>
+        </Box>
 
-      <DateRangeBar from={from} to={to} setFrom={setFrom} setTo={setTo} />
-      <SummaryCards from={from} to={to} />
+        {loading ? (
+          <Chip
+            label="Loading..."
+            variant="outlined"
+            icon={<CircularProgress size={14} />}
+            sx={{
+              borderColor: "rgba(79,209,196,0.22)",
+              backgroundColor: "rgba(79,209,196,0.06)",
+              color: "rgba(255,255,255,0.78)",
+              fontWeight: 900,
+            }}
+          />
+        ) : (
+          <Chip
+            label="Live"
+            variant="outlined"
+            sx={{
+              borderColor: "rgba(79,209,196,0.22)",
+              backgroundColor: "rgba(79,209,196,0.06)",
+              color: "rgba(255,255,255,0.78)",
+              fontWeight: 900,
+            }}
+          />
+        )}
+      </Box>
 
+      {error ? (
+        <Paper className="glass" elevation={0} sx={{ p: 2, mb: 2, borderColor: "rgba(255,107,107,0.25)" }}>
+          <Typography sx={{ fontWeight: 900, color: "rgba(255,107,107,0.95)" }}>{error}</Typography>
+        </Paper>
+      ) : null}
+
+      {/* KPI Row */}
       <Grid container spacing={2}>
-        <Grid item xs={12} lg={8}>
-          <ChartCard title="Activity Trend" subtitle="Logs per day">
-            <ActivityTrendLine
-              labels={trend?.labels || []}
-              series={trend?.series || []}
-            />
-          </ChartCard>
-        </Grid>
+        {kpis.map((k) => (
+          <Grid key={k.title} item xs={12} sm={6} lg={3}>
+            <KpiCard {...k} />
+          </Grid>
+        ))}
+      </Grid>
 
-        <Grid item xs={12} lg={4}>
-          <ChartCard title="Category Breakdown" subtitle="Distribution by category">
-            <CategoryPie items={topCats?.items || []} />
-          </ChartCard>
-        </Grid>
-
-        <Grid item xs={12} lg={6}>
-          <ChartCard title="Top Applications" subtitle="Most active apps">
-            <TopBarChart items={topApps?.items || []} />
-          </ChartCard>
-        </Grid>
-
-        <Grid item xs={12} lg={6}>
-          <ChartCard title="Hourly Activity" subtitle="Heatmap (local parsing)">
-            <HourlyHeatmap hourly={hourly?.hourly || {}} />
-          </ChartCard>
-        </Grid>
-
+      {/* Charts Row */}
+      <Grid container spacing={2} sx={{ mt: 1 }}>
         <Grid item xs={12} lg={7}>
-          <ChartCard title="Recent Activity" subtitle="Latest captured logs">
-            <RecentLogsTable from={from} to={to} limit={12} />
+          <ChartCard title="Activity Trend" subtitle="Logs per day">
+            <ActivityTrendLine labels={trend.labels} series={trend.series} />
           </ChartCard>
         </Grid>
 
         <Grid item xs={12} lg={5}>
-          <ChartCard title="Recent Screenshots" subtitle="Latest captured screenshots">
-            <RecentScreenshots from={from} to={to} limit={8} />
+          <ChartCard title="Top Categories" subtitle="Most frequent categories">
+            <TopBarChart items={topSignals} />
           </ChartCard>
         </Grid>
       </Grid>
-    </Stack>
+    </Box>
   );
 }

@@ -1,4 +1,5 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
+
 import {
   Box,
   Button,
@@ -78,9 +79,38 @@ export default function Login() {
     }
   }
 
+
+
+
+useEffect(() => {
+  window.history.pushState(null, "", window.location.href);
+  window.onpopstate = () => {
+    window.history.pushState(null, "", window.location.href);
+  };
+}, []);
+
+
+
+
+
+
   return (
-    <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", p: 3 }}>
-      <Paper sx={{ width: "100%", maxWidth: 520, p: 4 }}>
+    <Box sx={{
+    minHeight: "100vh",
+    display: "grid",
+    placeItems: "center",
+    background:
+      "radial-gradient(900px 600px at 20% 10%, rgba(79,209,196,0.18), transparent 55%)," +
+      "linear-gradient(180deg, #050810, #070d18)",
+  }}>
+      <Paper className="glass"
+  elevation={0}
+  sx={{
+    p: 3,
+    width: 420,
+    borderRadius: 4,
+    border: "1px solid rgba(255,255,255,0.10)",
+  }}>
         <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
           Sign in
         </Typography>
