@@ -1,0 +1,240 @@
+/* src/index.css */
+
+/* -------------------------
+   Base theme variables
+-------------------------- */
+:root {
+  --bg0: #050810;
+  --bg1: #070d18;
+  --bg2: #0a1426;
+
+  --card: rgba(255, 255, 255, 0.055);
+  --card2: rgba(255, 255, 255, 0.085);
+
+  --border: rgba(255, 255, 255, 0.10);
+  --border2: rgba(255, 255, 255, 0.14);
+
+  --text: rgba(255, 255, 255, 0.92);
+  --muted: rgba(255, 255, 255, 0.64);
+
+  --primary: #4fd1c4;
+  --primary-soft: rgba(79, 209, 196, 0.55);
+}
+
+/* -------------------------
+   HARD RESET (prevents "pushed down" layout)
+-------------------------- */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Force top-aligned block layout even if something else set flex */
+body {
+  display: block !important;
+  align-items: initial !important;
+  justify-content: initial !important;
+  overflow-x: hidden;
+  color: var(--text);
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+
+  background:
+    radial-gradient(1100px 650px at 18% 10%, rgba(79, 209, 196, 0.18), transparent 55%),
+    radial-gradient(900px 600px at 80% 15%, rgba(126, 220, 211, 0.10), transparent 55%),
+    radial-gradient(900px 600px at 60% 90%, rgba(79, 209, 196, 0.06), transparent 60%),
+    linear-gradient(180deg, var(--bg0), var(--bg1) 40%, var(--bg2));
+}
+
+#root {
+  display: block !important;
+  position: relative;
+  z-index: 1; /* content above background waves */
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* -------------------------
+   Glass UI helpers
+-------------------------- */
+.glass {
+  background: var(--card);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 18px;
+}
+
+.glass-hover:hover {
+  background: var(--card2);
+  border-color: var(--border2);
+}
+
+/* -------------------------
+   Scrollbar (optional)
+-------------------------- */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* =========================
+   Background Waves (SAFE FIX)
+   - fixed to viewport
+   - does not create extra scroll space
+========================= */
+.iw-bg-waves {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.iw-bg-waves svg {
+  position: absolute;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  opacity: 0.55;
+  transform: translateZ(0);
+}
+
+/* Wave animations */
+@keyframes iwFloat1 {
+  0% { transform: translate3d(-2%, -1%, 0) scale(1); }
+  50% { transform: translate3d(2%, 1%, 0) scale(1.02); }
+  100% { transform: translate3d(-2%, -1%, 0) scale(1); }
+}
+@keyframes iwFloat2 {
+  0% { transform: translate3d(2%, 1%, 0) scale(1.01); }
+  50% { transform: translate3d(-2%, -1%, 0) scale(1.03); }
+  100% { transform: translate3d(2%, 1%, 0) scale(1.01); }
+}
+@keyframes iwDrift {
+  0% { transform: translate3d(-2%, 0, 0); }
+  100% { transform: translate3d(2%, 0, 0); }
+}
+
+/* =========================
+   Page Transitions
+========================= */
+.page-enter {
+  animation: pageEnter 420ms cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes pageEnter {
+  0% { opacity: 0; transform: translate3d(0, 10px, 0); filter: blur(2px); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0); filter: blur(0); }
+}
+
+/* =========================
+   Scroll Reveal
+========================= */
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, 12px, 0);
+  filter: blur(2px);
+  transition: opacity 520ms cubic-bezier(.2,.8,.2,1),
+              transform 520ms cubic-bezier(.2,.8,.2,1),
+              filter 520ms cubic-bezier(.2,.8,.2,1);
+  will-change: opacity, transform, filter;
+}
+.reveal.in {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  filter: blur(0);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* =========================
+   NEW: Clean dashboard page frame (consistent on every tab)
+========================= */
+.dash-page {
+  width: min(1200px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* =========================
+   NEW: Sticky, premium table look (used by Logs/Screenshots later)
+========================= */
+.iw-tableWrap {
+  width: 100%;
+  max-height: 520px;
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.iw-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 920px; /* prevents squish */
+}
+
+.iw-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(10, 14, 25, 0.92);
+  color: rgba(255,255,255,0.76);
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.iw-table tbody td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.86);
+  font-size: 13px;
+}
+
+.iw-table tbody tr:hover td {
+  background: rgba(255,255,255,0.03);
+}
+
+/* =========================
+   Dashboard frame (center + spacing)
+========================= */
+.dash-page {
+  width: min(1200px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
