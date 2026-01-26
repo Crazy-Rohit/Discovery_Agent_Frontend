@@ -6,9 +6,9 @@ export default function WavyBackground() {
       <svg viewBox="0 0 1200 800" style={{ animation: "iwFloat1 16s ease-in-out infinite" }}>
         <defs>
           <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="rgba(79,209,196,0.22)" />
-            <stop offset="55%" stopColor="rgba(99,102,241,0.10)" />
-            <stop offset="100%" stopColor="rgba(236,72,153,0.08)" />
+            <stop offset="0%" stopColor="var(--wave-a)" />
+            <stop offset="55%" stopColor="var(--wave-b)" />
+            <stop offset="100%" stopColor="var(--wave-c)" />
           </linearGradient>
         </defs>
         <path
@@ -20,9 +20,9 @@ export default function WavyBackground() {
       <svg viewBox="0 0 1200 800" style={{ animation: "iwFloat2 20s ease-in-out infinite" }}>
         <defs>
           <linearGradient id="g2" x1="1" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(34,197,94,0.10)" />
-            <stop offset="55%" stopColor="rgba(79,209,196,0.18)" />
-            <stop offset="100%" stopColor="rgba(59,130,246,0.08)" />
+            <stop offset="0%" stopColor="var(--wave-d)" />
+            <stop offset="55%" stopColor="var(--wave-a)" />
+            <stop offset="100%" stopColor="var(--wave-e)" />
           </linearGradient>
         </defs>
         <path
@@ -31,12 +31,15 @@ export default function WavyBackground() {
         />
       </svg>
 
-      <svg viewBox="0 0 1200 800" style={{ animation: "iwDrift 22s ease-in-out infinite alternate", opacity: 0.35 }}>
+      <svg
+        viewBox="0 0 1200 800"
+        style={{ animation: "iwDrift 22s ease-in-out infinite alternate", opacity: 0.35 }}
+      >
         <defs>
           <linearGradient id="g3" x1="0" y1="1" x2="1" y2="0">
-            <stop offset="0%" stopColor="rgba(168,85,247,0.10)" />
-            <stop offset="55%" stopColor="rgba(79,209,196,0.12)" />
-            <stop offset="100%" stopColor="rgba(245,158,11,0.06)" />
+            <stop offset="0%" stopColor="var(--wave-f)" />
+            <stop offset="55%" stopColor="var(--wave-a)" />
+            <stop offset="100%" stopColor="var(--wave-g)" />
           </linearGradient>
         </defs>
         <path

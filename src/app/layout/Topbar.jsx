@@ -10,12 +10,18 @@ import {
   MenuItem,
   Stack,
   Chip,
+  Tooltip,
 } from "@mui/material";
 
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import AccountCircleRoundedIcon from "@mui/icons-material/AccountCircleRounded";
 import TuneRoundedIcon from "@mui/icons-material/TuneRounded";
+import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
+import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
+import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
+
+import { useThemeMode } from "../providers/ThemeProvider";
 
 function titleFromPath(pathname) {
   const p = pathname.toLowerCase();
@@ -28,9 +34,10 @@ function titleFromPath(pathname) {
   return "Dashboard";
 }
 
-export default function Topbar() {
+export default function Topbar({ onOpenSidebar }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { mode, toggleMode } = useThemeMode();
 
   const pageTitle = useMemo(() => titleFromPath(location.pathname), [location.pathname]);
 
@@ -38,14 +45,11 @@ export default function Topbar() {
   const open = Boolean(anchorEl);
 
   const onLogout = () => {
-  try {
-    localStorage.removeItem("token");
-  } catch (_) {}
-
-  // Replace history so back button won't work
-  window.location.replace("/login");
-};
-
+    try {
+      localStorage.removeItem("token");
+    } catch (_) {}
+    window.location.replace("/login");
+  };
 
   return (
     <Box
@@ -55,17 +59,33 @@ export default function Topbar() {
         zIndex: 10,
         px: { xs: 2, md: 3 },
         py: 2,
-        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        borderBottom: "1px solid var(--border-1)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
-        background: "rgba(7,10,18,0.55)",
+        background: "var(--surface-1)",
       }}
     >
       <Stack direction="row" alignItems="center" spacing={2}>
-        <Box sx={{ minWidth: 180 }}>
-          <Typography sx={{ fontWeight: 800, fontSize: 18 }}>{pageTitle}</Typography>
+        {/* Mobile hamburger */}
+        <Box sx={{ display: { xs: "block", md: "none" } }}>
+          <IconButton
+            onClick={onOpenSidebar}
+            sx={{
+              border: "1px solid var(--border-1)",
+              background: "var(--surface-3)",
+              color: "var(--text)",
+            }}
+          >
+            <MenuRoundedIcon />
+          </IconButton>
+        </Box>
+
+        <Box sx={{ minWidth: 200 }}>
+          <Typography sx={{ fontWeight: 900, fontSize: 18, color: "var(--text)" }}>
+            {pageTitle}
+          </Typography>
           <Typography variant="caption" className="muted">
-            Innerwall-style monitoring dashboard
+            Monitoring dashboard
           </Typography>
         </Box>
 
@@ -75,11 +95,12 @@ export default function Topbar() {
           size="small"
           placeholder="Search logs, users, devices..."
           sx={{
-            width: { xs: 220, md: 380 },
+            width: { xs: 180, sm: 240, md: 380 },
             "& .MuiOutlinedInput-root": {
               borderRadius: 999,
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.10)",
+              background: "var(--surface-3)",
+              border: "1px solid var(--border-1)",
+              color: "var(--text)",
             },
             "& fieldset": { border: "none" },
           }}
@@ -97,18 +118,32 @@ export default function Topbar() {
           label="Filters"
           variant="outlined"
           sx={{
-            borderColor: "rgba(255,255,255,0.12)",
-            color: "rgba(255,255,255,0.78)",
-            backgroundColor: "rgba(255,255,255,0.04)",
-            "& .MuiChip-icon": { color: "rgba(255,255,255,0.75)" },
+            borderColor: "var(--border-1)",
+            color: "var(--text)",
+            backgroundColor: "var(--surface-3)",
+            "& .MuiChip-icon": { color: "var(--muted)" },
           }}
         />
+
+        <Tooltip title={mode === "dark" ? "Switch to Light" : "Switch to Dark"}>
+          <IconButton
+            onClick={toggleMode}
+            sx={{
+              border: "1px solid var(--border-1)",
+              background: "var(--surface-3)",
+              color: "var(--text)",
+            }}
+          >
+            {mode === "dark" ? <DarkModeRoundedIcon /> : <LightModeRoundedIcon />}
+          </IconButton>
+        </Tooltip>
 
         <IconButton
           onClick={(e) => setAnchorEl(e.currentTarget)}
           sx={{
-            border: "1px solid rgba(255,255,255,0.10)",
-            background: "rgba(255,255,255,0.05)",
+            border: "1px solid var(--border-1)",
+            background: "var(--surface-3)",
+            color: "var(--text)",
           }}
         >
           <AccountCircleRoundedIcon />

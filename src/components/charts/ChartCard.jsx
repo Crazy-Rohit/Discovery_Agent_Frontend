@@ -1,26 +1,24 @@
 import React from "react";
 import { Card, CardContent, CardHeader, Typography, Box } from "@mui/material";
 
-/**
- * Phase 3: Innerwall-style glass chart container.
- * Backward compatible:
- * - keeps title, subtitle, children props
- * - adds optional `right` slot without breaking current usage
- */
 export default function ChartCard({ title, subtitle, right, children }) {
   return (
     <Card
       variant="outlined"
-      className="glass"
+      className="glass iw-chartCard"
       sx={{
-        borderRadius: 4,
-        background: "rgba(255,255,255,0.055)",
-        borderColor: "rgba(255,255,255,0.10)",
+        width: "100%",
+        height: "100%",
+        borderRadius: "var(--radius)",
+        background: "var(--surface-2)",
+        borderColor: "var(--border-1)",
         overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       <CardHeader
-        sx={{ pb: 0.5 }}
+        sx={{ pb: 0.5, pt: 2, px: 2 }}
         title={
           <Box sx={{ display: "flex", alignItems: "end", gap: 2 }}>
             <Box sx={{ flex: 1 }}>
@@ -39,7 +37,9 @@ export default function ChartCard({ title, subtitle, right, children }) {
           </Box>
         }
       />
-      <CardContent sx={{ pt: 1.5 }}>{children}</CardContent>
+      <CardContent sx={{ pt: 1.5, px: 2, pb: 2, flex: 1, minHeight: 0 }}>
+        {children}
+      </CardContent>
     </Card>
   );
 }

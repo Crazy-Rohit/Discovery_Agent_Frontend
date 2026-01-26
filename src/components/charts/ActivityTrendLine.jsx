@@ -22,7 +22,7 @@ function GlassTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
 
   return (
-    <Box className="glass" sx={{ p: 1.1, borderRadius: 2 }}>
+    <Box className="glass" sx={{ p: 1.1, borderRadius: 10 }}>
       <Typography sx={{ fontWeight: 900, fontSize: 12, opacity: 0.92 }}>
         {label}
       </Typography>

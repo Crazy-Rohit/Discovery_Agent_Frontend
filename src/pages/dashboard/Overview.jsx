@@ -15,7 +15,11 @@ import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 
 function KpiCard({ title, value, icon }) {
   return (
-    <Paper className="glass glass-hover" elevation={0} sx={{ p: 2, position: "relative", overflow: "hidden" }}>
+    <Paper
+      className="glass glass-hover iw-fixedCard"
+      elevation={0}
+      sx={{ p: 2, position: "relative", overflow: "hidden" }}
+    >
       <Box
         sx={{
           position: "absolute",
@@ -32,7 +36,7 @@ function KpiCard({ title, value, icon }) {
           sx={{
             width: 40,
             height: 40,
-            borderRadius: 2,
+            borderRadius: 10,
             border: "1px solid rgba(255,255,255,0.12)",
             background:
               "radial-gradient(18px 18px at 30% 30%, rgba(79,209,196,0.95), rgba(79,209,196,0.10))",
