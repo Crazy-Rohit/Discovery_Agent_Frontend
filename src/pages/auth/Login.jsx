@@ -21,6 +21,7 @@ import { useNavigate } from "react-router-dom";
 
 import { AuthContext } from "../../app/providers/AuthProvider";
 import { forgotPasswordApi } from "../../features/auth/auth.api";
+import WavyBackground from "../../components/ui/WavyBackground";
 
 export default function Login() {
   const nav = useNavigate();
@@ -79,96 +80,92 @@ export default function Login() {
     }
   }
 
-
-
-
-useEffect(() => {
-  window.history.pushState(null, "", window.location.href);
-  window.onpopstate = () => {
+  useEffect(() => {
     window.history.pushState(null, "", window.location.href);
-  };
-}, []);
-
-
-
-
-
+    window.onpopstate = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+  }, []);
 
   return (
-    <Box sx={{
-    minHeight: "100vh",
-    display: "grid",
-    placeItems: "center",
-    background:
-      "radial-gradient(900px 600px at 20% 10%, rgba(79,209,196,0.18), transparent 55%)," +
-      "linear-gradient(180deg, #050810, #070d18)",
-  }}>
-      <Paper className="glass"
-  elevation={0}
-  sx={{
-    p: 3,
-    width: 420,
-    borderRadius: 4,
-    border: "1px solid rgba(255,255,255,0.10)",
-  }}>
-        <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
-          Sign in
-        </Typography>
-        <Typography sx={{ color: "text.secondary", mb: 3 }}>
-          Login with your company email.
-        </Typography>
+    <Box className="login-shell" sx={{ position: "relative" }}>
+      <WavyBackground />
 
-        <form onSubmit={onSubmit}>
-          <Stack spacing={2.2}>
-            <TextField label="Company Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+      <Box sx={{ position: "relative" }}>
+        <div className="login-glow" aria-hidden="true" />
 
-            <TextField
-              label="Password"
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword((s) => !s)} edge="end">
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
+        <Paper
+          className="glass login-card"
+          elevation={0}
+          sx={{
+            position: "relative",
+            p: 3,
+            width: 420,
+            maxWidth: "92vw",
+            borderRadius: 4,
+            border: "1px solid rgba(255,255,255,0.10)",
+            zIndex: 1,
+          }}
+        >
+          <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
+            Sign in
+          </Typography>
+          <Typography sx={{ color: "text.secondary", mb: 3 }}>
+            Login with your company email.
+          </Typography>
 
-            {err ? <Typography color="error">{err}</Typography> : null}
+          <form onSubmit={onSubmit}>
+            <Stack spacing={2.2}>
+              <TextField label="Company Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
 
-            <Button type="submit" variant="contained" size="large" disabled={busy}>
-              {busy ? "Signing in..." : "Sign in"}
-            </Button>
-
-            <Stack direction="row" justifyContent="space-between">
-              <Link
-                component="button"
-                type="button"
-                underline="hover"
-                onClick={() => {
-                  setFpErr("");
-                  setFpMsg("");
-                  setFpPass("");
-                  setFpPass2("");
-                  setFpOpen(true);
+              <TextField
+                label="Password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowPassword((s) => !s)} edge="end">
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
                 }}
-                sx={{ fontSize: 14 }}
-              >
-                Forgot password?
-              </Link>
+              />
 
-              <Link component="button" type="button" underline="hover" onClick={() => nav("/register")} sx={{ fontSize: 14 }}>
-                Create account
-              </Link>
+              {err ? <Typography color="error">{err}</Typography> : null}
+
+              <Button type="submit" variant="contained" size="large" disabled={busy}>
+                {busy ? "Signing in..." : "Sign in"}
+              </Button>
+
+              <Stack direction="row" justifyContent="space-between">
+                <Link
+                  component="button"
+                  type="button"
+                  underline="hover"
+                  onClick={() => {
+                    setFpErr("");
+                    setFpMsg("");
+                    setFpPass("");
+                    setFpPass2("");
+                    setFpOpen(true);
+                  }}
+                  sx={{ fontSize: 14 }}
+                >
+                  Forgot password?
+                </Link>
+
+                <Link component="button" type="button" underline="hover" onClick={() => nav("/register")} sx={{ fontSize: 14 }}>
+                  Create account
+                </Link>
+              </Stack>
             </Stack>
-          </Stack>
-        </form>
-      </Paper>
+          </form>
+        </Paper>
+      </Box>
 
       <Dialog open={fpOpen} onClose={() => !fpBusy && setFpOpen(false)} fullWidth maxWidth="xs">
         <DialogTitle>Reset Password</DialogTitle>

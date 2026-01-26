@@ -238,3 +238,49 @@ html {
   gap: 16px;
   min-width: 0;
 }
+
+/* =========================
+   Login animations
+========================= */
+.login-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.login-card {
+  animation: loginCardIn 520ms cubic-bezier(.2,.8,.2,1) both;
+  transform-origin: 50% 60%;
+}
+
+@keyframes loginCardIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.98);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.login-glow {
+  position: absolute;
+  inset: -60px;
+  border-radius: 32px;
+  background: radial-gradient(600px 240px at 30% 20%, rgba(79,209,196,0.16), transparent 60%),
+              radial-gradient(500px 260px at 70% 80%, rgba(99,102,241,0.12), transparent 62%);
+  filter: blur(18px);
+  opacity: 0.9;
+  z-index: 0;
+  pointer-events: none;
+  animation: loginGlow 6s ease-in-out infinite alternate;
+}
+
+@keyframes loginGlow {
+  0% { transform: translate3d(-6px, -2px, 0) scale(1.0); }
+  100% { transform: translate3d(6px, 2px, 0) scale(1.04); }
+}
