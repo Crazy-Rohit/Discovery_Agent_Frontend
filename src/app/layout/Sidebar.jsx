@@ -10,6 +10,7 @@ import InsightsRoundedIcon from "@mui/icons-material/InsightsRounded";
 import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
 import BoltRoundedIcon from "@mui/icons-material/BoltRounded";
+import { useUserSelection } from "../providers/UserSelectionProvider";
 
 const ROLE_C_SUITE = "C_SUITE";
 const ROLE_DEPT_HEAD = "DEPARTMENT_HEAD";
@@ -27,19 +28,30 @@ const linkBase = {
 
 export function SidebarContent({ onNavigate }) {
   const { me } = useAuth();
+  const { selectedUser } = useUserSelection();
   const location = useLocation();
   const role = String(me?.role_key || me?.role || "").toUpperCase();
 
   const canSeeUsers = role === ROLE_C_SUITE || role === ROLE_DEPT_HEAD;
 
-  const navItems = [
+  // Initial sidebar: Overview, Users (if allowed), Settings.
+  // After selecting a user: Logs, Screenshots, Insights appear.
+  const baseItems = [
     { label: "Overview", to: "/dashboard/overview", icon: <DashboardRoundedIcon /> },
-    { label: "Logs", to: "/dashboard/logs", icon: <ArticleRoundedIcon /> },
-    { label: "Screenshots", to: "/dashboard/screenshots", icon: <ImageRoundedIcon /> },
-    { label: "Insights", to: "/dashboard/insights", icon: <InsightsRoundedIcon /> },
     ...(canSeeUsers ? [{ label: "Users", to: "/dashboard/users", icon: <PeopleAltRoundedIcon /> }] : []),
     { label: "Settings", to: "/dashboard/settings", icon: <SettingsRoundedIcon /> },
   ];
+
+  const userScopedItems = selectedUser
+    ? [
+        { label: "Logs", to: "/dashboard/logs", icon: <ArticleRoundedIcon /> },
+        { label: "Screenshots", to: "/dashboard/screenshots", icon: <ImageRoundedIcon /> },
+        { label: "Insights", to: "/dashboard/insights", icon: <InsightsRoundedIcon /> },
+      ]
+    : [];
+
+  // Always keep Overview first, then user-scoped items, then Users/Settings
+  const navItems = [...baseItems.slice(0, 1), ...userScopedItems, ...baseItems.slice(1)];
 
   return (
     <Box className="glass" sx={{ height: "100%", p: 2, display: "flex", flexDirection: "column" }}>

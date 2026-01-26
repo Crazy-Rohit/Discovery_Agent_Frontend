@@ -25,6 +25,7 @@ import { useThemeMode } from "../providers/ThemeProvider";
 
 function titleFromPath(pathname) {
   const p = pathname.toLowerCase();
+  if (p.includes("/profile")) return "Profile";
   if (p.includes("/overview")) return "Overview";
   if (p.includes("/logs")) return "Logs";
   if (p.includes("/screenshots")) return "Screenshots";
@@ -47,6 +48,7 @@ export default function Topbar({ onOpenSidebar }) {
   const onLogout = () => {
     try {
       localStorage.removeItem("token");
+      localStorage.removeItem("da_selected_user_v1");
     } catch (_) {}
     window.location.replace("/login");
   };
@@ -66,7 +68,6 @@ export default function Topbar({ onOpenSidebar }) {
       }}
     >
       <Stack direction="row" alignItems="center" spacing={2}>
-        {/* Mobile hamburger */}
         <Box sx={{ display: { xs: "block", md: "none" } }}>
           <IconButton
             onClick={onOpenSidebar}
@@ -150,6 +151,14 @@ export default function Topbar({ onOpenSidebar }) {
         </IconButton>
 
         <Menu anchorEl={anchorEl} open={open} onClose={() => setAnchorEl(null)}>
+          <MenuItem
+            onClick={() => {
+              setAnchorEl(null);
+              navigate("/dashboard/profile");
+            }}
+          >
+            Profile
+          </MenuItem>
           <MenuItem
             onClick={() => {
               setAnchorEl(null);
