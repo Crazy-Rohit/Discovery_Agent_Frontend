@@ -19,7 +19,6 @@ const COLORS = [
   "rgba(168,85,247,0.85)",
 ];
 
-
 function GlassTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
 
@@ -31,7 +30,7 @@ function GlassTooltip({ active, payload }) {
       </Typography>
       <Typography className="muted" sx={{ fontSize: 12 }}>
         Count:{" "}
-        <span style={{ fontWeight: 950, color: "rgba(255,255,255,0.92)" }}>
+        <span style={{ fontWeight: 950, color: "var(--text)" }}>
           {p?.count ?? 0}
         </span>
       </Typography>
@@ -53,7 +52,7 @@ export default function CategoryPie({ items = [] }) {
             innerRadius={68}
             outerRadius={100}
             paddingAngle={2}
-            stroke="rgba(7,13,24,0.6)"
+            stroke="var(--border-2)"
             strokeWidth={2}
           >
             {safe.map((_, i) => (
@@ -65,7 +64,7 @@ export default function CategoryPie({ items = [] }) {
 
           <Legend
             wrapperStyle={{
-              color: "rgba(255,255,255,0.70)",
+              color: "var(--muted)",
               fontSize: 12,
             }}
           />

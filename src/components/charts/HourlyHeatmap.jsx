@@ -2,7 +2,7 @@ import React from "react";
 import { Box, Typography } from "@mui/material";
 
 /**
- * Phase 8: Multi-color heatmap using HSL mapping (soothing but colorful)
+ * Multi-color heatmap using HSL mapping (soothing but colorful)
  */
 function colorForIntensity(t) {
   // Hue from teal-ish (170) -> purple (260)
@@ -31,7 +31,7 @@ export default function HourlyHeatmap({ hourly = {} }) {
               height: 40,
               borderRadius: 2,
               background: colorForIntensity(t),
-              border: "1px solid rgba(255,255,255,0.10)",
+              border: "1px solid var(--border-1)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -42,7 +42,7 @@ export default function HourlyHeatmap({ hourly = {} }) {
               variant="caption"
               sx={{
                 fontWeight: 950,
-                color: t > 0.35 ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.72)",
+                color: t > 0.35 ? "var(--text)" : "var(--muted)",
               }}
             >
               {String(h).padStart(2, "0")}

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Avatar,
   Box,
   Button,
   Chip,
@@ -9,17 +10,27 @@ import {
   DialogTitle,
   Divider,
   FormControl,
+  IconButton,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Paper,
   Select,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 
+import GridViewRoundedIcon from "@mui/icons-material/GridViewRounded";
+import ViewListRoundedIcon from "@mui/icons-material/ViewListRounded";
+import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
+import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
+
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../app/providers/AuthProvider";
 import PageHeader from "../../components/ui/PageHeader";
+
 import { listUsersApi, createUserApi, updateUserApi } from "../../features/users/users.api";
 import { listDepartmentsApi, createDepartmentApi } from "../../features/departments/departments.api";
 
@@ -35,32 +46,121 @@ function roleLabel(role) {
   return r || "(unknown)";
 }
 
-function RoleChip({ role }) {
-  const r = String(role || "").toUpperCase();
-  const variant = r === ROLE_C_SUITE ? "filled" : "outlined";
-  return <Chip size="small" variant={variant} label={roleLabel(r)} />;
+function initials(nameOrEmail) {
+  const s = String(nameOrEmail || "").trim();
+  if (!s) return "U";
+  const parts = s.split(/\s+/).slice(0, 2);
+  if (parts.length === 1) return parts[0][0]?.toUpperCase() || "U";
+  return `${parts[0][0] || "U"}${parts[1][0] || ""}`.toUpperCase();
+}
+
+function UserCard({ u, onOpen }) {
+  const title = u.full_name || u.company_username_norm || u.company_username || "User";
+  const sub = u.company_username_norm || u.company_username || "—";
+
+  return (
+    <Paper
+      className="glass glass-hover"
+      elevation={0}
+      onClick={onOpen}
+      sx={{
+        p: 2,
+        cursor: "pointer",
+        borderRadius: 3,
+        border: "1px solid var(--border-1)",
+        transition: "transform .12s ease",
+        "&:hover": { transform: "translateY(-2px)" },
+      }}
+    >
+      <Stack direction="row" spacing={1.5} alignItems="center">
+        <Avatar sx={{ width: 44, height: 44, borderRadius: 3, bgcolor: "rgba(79,209,196,0.22)" }}>
+          {initials(title)}
+        </Avatar>
+
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography sx={{ fontWeight: 950 }} noWrap>
+            {title}
+          </Typography>
+          <Typography variant="caption" sx={{ color: "var(--muted)" }} noWrap>
+            {sub}
+          </Typography>
+
+          <Stack direction="row" spacing={1} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
+            <Chip size="small" variant="outlined" label={u.department || "No department"} />
+            <Chip size="small" variant={String(u.role_key).toUpperCase() === ROLE_C_SUITE ? "filled" : "outlined"} label={roleLabel(u.role_key)} />
+            <Chip size="small" color={u.is_active ? "success" : "default"} variant="outlined" label={u.is_active ? "Active" : "Inactive"} />
+          </Stack>
+        </Box>
+
+        <Tooltip title="Open user">
+          <IconButton size="small">
+            <PersonRoundedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </Stack>
+    </Paper>
+  );
+}
+
+function UserRow({ u, onOpen }) {
+  return (
+    <Paper
+      className="glass glass-hover"
+      elevation={0}
+      onClick={onOpen}
+      sx={{
+        p: 1.4,
+        cursor: "pointer",
+        borderRadius: 3,
+        border: "1px solid var(--border-1)",
+      }}
+    >
+      <Stack direction="row" alignItems="center" spacing={1.5}>
+        <Avatar sx={{ width: 36, height: 36, borderRadius: 3, bgcolor: "rgba(99,102,241,0.18)" }}>
+          {initials(u.full_name || u.company_username_norm)}
+        </Avatar>
+
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography sx={{ fontWeight: 950 }} noWrap>
+            {u.full_name || "—"}
+          </Typography>
+          <Typography variant="caption" sx={{ color: "var(--muted)" }} noWrap>
+            {u.company_username_norm || u.company_username || "—"}
+          </Typography>
+        </Box>
+
+        <Chip size="small" variant="outlined" label={u.department || "—"} />
+        <Chip size="small" variant={String(u.role_key).toUpperCase() === ROLE_C_SUITE ? "filled" : "outlined"} label={roleLabel(u.role_key)} />
+        <Chip size="small" color={u.is_active ? "success" : "default"} variant="outlined" label={u.is_active ? "Active" : "Inactive"} />
+      </Stack>
+    </Paper>
+  );
 }
 
 export default function Users() {
+  const nav = useNavigate();
   const { me } = useAuth();
+
   const role = String(me?.role_key || me?.role || "").toUpperCase();
   const canAccess = role === ROLE_C_SUITE || role === ROLE_DEPT_HEAD;
   const canWrite = role === ROLE_C_SUITE;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
 
-  // Admin filter: view by department
+  const [view, setView] = useState("grid"); // grid | list
+  const [q, setQ] = useState("");
   const [deptFilter, setDeptFilter] = useState("");
+  const [sort, setSort] = useState("name"); // name | created
 
-  // Create / Edit dialogs
+  // Admin dialogs (kept)
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState(null);
 
-  // Department create dialog
   const [deptOpen, setDeptOpen] = useState(false);
   const [deptName, setDeptName] = useState("");
   const [deptBusy, setDeptBusy] = useState(false);
@@ -77,11 +177,6 @@ export default function Users() {
     role_key: ROLE_DEPT_MEMBER,
     is_active: true,
   });
-
-  const filteredUsers = useMemo(() => {
-    if (!deptFilter) return users;
-    return users.filter((u) => String(u.department || "").toLowerCase() === String(deptFilter).toLowerCase());
-  }, [users, deptFilter]);
 
   async function loadAll() {
     setLoading(true);
@@ -102,6 +197,39 @@ export default function Users() {
     loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canAccess]);
+
+  const filtered = useMemo(() => {
+    let rows = Array.isArray(users) ? [...users] : [];
+
+    // dept filter
+    if (deptFilter) {
+      rows = rows.filter((u) => String(u.department || "").toLowerCase() === String(deptFilter).toLowerCase());
+    }
+
+    // search
+    const s = String(q || "").trim().toLowerCase();
+    if (s) {
+      rows = rows.filter((u) => {
+        const a = `${u.full_name || ""} ${u.company_username_norm || u.company_username || ""} ${u.department || ""} ${u.user_mac_id || ""}`.toLowerCase();
+        return a.includes(s);
+      });
+    }
+
+    // sort
+    if (sort === "created") {
+      rows.sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+    } else {
+      rows.sort((a, b) => String(a.full_name || a.company_username_norm || "").localeCompare(String(b.full_name || b.company_username_norm || "")));
+    }
+
+    return rows;
+  }, [users, deptFilter, q, sort]);
+
+  function openUser(u) {
+    const email = u.company_username_norm || u.company_username;
+    if (!email) return;
+    nav(`/dashboard/users/${encodeURIComponent(email)}`);
+  }
 
   function resetForm() {
     setForm({
@@ -230,84 +358,119 @@ export default function Users() {
     <Box className="dash-page">
       <PageHeader
         title="Users"
-        subtitle={canWrite ? "Create and manage users, departments, and roles (RBAC)." : "Monitor your department users (read-only)."}
+        subtitle={canWrite ? "Create and manage users (Drive-style workspace)." : "Monitor your department users (read-only)."}
+        right={
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Tooltip title="Grid view">
+              <IconButton onClick={() => setView("grid")} className="glass-hover" size="small">
+                <GridViewRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="List view">
+              <IconButton onClick={() => setView("list")} className="glass-hover" size="small">
+                <ViewListRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        }
       />
 
       <Paper className="glass" elevation={0} sx={{ p: 2 }}>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ xs: "stretch", sm: "center" }} justifyContent="space-between">
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ xs: "stretch", sm: "center" }}>
-            {role === ROLE_C_SUITE ? (
-              <FormControl size="small" sx={{ minWidth: 220 }}>
-                <InputLabel>Department filter</InputLabel>
-                <Select value={deptFilter} label="Department filter" onChange={(e) => setDeptFilter(e.target.value)}>
-                  <MenuItem value="">All departments</MenuItem>
-                  {departments.map((d) => (
-                    <MenuItem key={d} value={d}>{d}</MenuItem>
-                  ))}
+        <Stack spacing={1.5}>
+          <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ xs: "stretch", md: "center" }} justifyContent="space-between">
+            <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ xs: "stretch", md: "center" }}>
+              <TextField
+                size="small"
+                placeholder="Search users…"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                sx={{ minWidth: { xs: "100%", md: 340 } }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchRoundedIcon fontSize="small" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              {role === ROLE_C_SUITE ? (
+                <FormControl size="small" sx={{ minWidth: 220 }}>
+                  <InputLabel>Department</InputLabel>
+                  <Select value={deptFilter} label="Department" onChange={(e) => setDeptFilter(e.target.value)}>
+                    <MenuItem value="">All departments</MenuItem>
+                    {departments.map((d) => (
+                      <MenuItem key={d} value={d}>{d}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              ) : (
+                <Chip size="small" variant="outlined" label={`Department: ${me?.department || "(not set)"}`} />
+              )}
+
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>Sort</InputLabel>
+                <Select value={sort} label="Sort" onChange={(e) => setSort(e.target.value)}>
+                  <MenuItem value="name">Name</MenuItem>
+                  <MenuItem value="created">Recently created</MenuItem>
                 </Select>
               </FormControl>
-            ) : (
-              <Chip size="small" label={`Department: ${me?.department || "(not set)"}`} />
-            )}
 
-            <Chip size="small" variant="outlined" label={`Total: ${filteredUsers.length}`} />
+              <Chip size="small" variant="outlined" label={`Total: ${filtered.length}`} />
+            </Stack>
+
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button variant="outlined" onClick={loadAll} disabled={loading}>Refresh</Button>
+              {canWrite ? (
+                <>
+                  <Button variant="outlined" onClick={() => setDeptOpen(true)}>Add department</Button>
+                  <Button variant="contained" onClick={openCreate}>Add user</Button>
+                </>
+              ) : null}
+            </Stack>
           </Stack>
 
-          <Stack direction="row" spacing={1} justifyContent="flex-end">
-            <Button variant="outlined" onClick={loadAll} disabled={loading}>Refresh</Button>
-            {canWrite ? (
-              <>
-                <Button variant="outlined" onClick={() => setDeptOpen(true)}>Add department</Button>
-                <Button variant="contained" onClick={openCreate}>Add user</Button>
-              </>
-            ) : null}
-          </Stack>
+          {error ? <Typography color="error">{error}</Typography> : null}
+
+          <Divider sx={{ borderColor: "var(--border-1)" }} />
+
+          {/* Content */}
+          {loading ? (
+            <Typography className="muted" sx={{ py: 2 }}>Loading…</Typography>
+          ) : filtered.length === 0 ? (
+            <Typography className="muted" sx={{ py: 2 }}>No users found.</Typography>
+          ) : view === "grid" ? (
+            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+              {filtered.map((u) => (
+                <Box key={u._id || u.company_username_norm}>
+                  <UserCard u={u} onOpen={() => openUser(u)} />
+                  {canWrite ? (
+                    <Box sx={{ mt: 1, display: "flex", justifyContent: "flex-end" }}>
+                      <Button size="small" variant="outlined" onClick={() => openEdit(u)}>
+                        Edit
+                      </Button>
+                    </Box>
+                  ) : null}
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Stack spacing={1}>
+              {filtered.map((u) => (
+                <Box key={u._id || u.company_username_norm}>
+                  <UserRow u={u} onOpen={() => openUser(u)} />
+                  {canWrite ? (
+                    <Box sx={{ mt: 1, display: "flex", justifyContent: "flex-end" }}>
+                      <Button size="small" variant="outlined" onClick={() => openEdit(u)}>
+                        Edit
+                      </Button>
+                    </Box>
+                  ) : null}
+                </Box>
+              ))}
+            </Stack>
+          )}
         </Stack>
-
-        {error ? (
-          <Typography color="error" sx={{ mt: 1.5 }}>{error}</Typography>
-        ) : null}
-
-        <Divider sx={{ my: 2, borderColor: "rgba(255,255,255,0.08)" }} />
-
-        <Box className="iw-tableWrap">
-          <table className="iw-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Department</th>
-                <th>Role</th>
-                <th>Active</th>
-                <th>MAC ID</th>
-                {canWrite ? <th /> : null}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={canWrite ? 7 : 6} className="muted">Loading…</td></tr>
-              ) : filteredUsers.length === 0 ? (
-                <tr><td colSpan={canWrite ? 7 : 6} className="muted">No users found.</td></tr>
-              ) : (
-                filteredUsers.map((u) => (
-                  <tr key={u._id || u.user_mac_id || u.company_username_norm}>
-                    <td>{u.full_name || "—"}</td>
-                    <td>{u.company_username_norm || u.company_username || "—"}</td>
-                    <td>{u.department || "—"}</td>
-                    <td><RoleChip role={u.role_key} /></td>
-                    <td>{u.is_active ? "Yes" : "No"}</td>
-                    <td>{u.user_mac_id || "—"}</td>
-                    {canWrite ? (
-                      <td style={{ textAlign: "right" }}>
-                        <Button size="small" variant="outlined" onClick={() => openEdit(u)}>Edit</Button>
-                      </td>
-                    ) : null}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </Box>
       </Paper>
 
       {/* Create user */}

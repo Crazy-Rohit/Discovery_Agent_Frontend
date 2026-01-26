@@ -11,11 +11,11 @@ import {
 } from "recharts";
 
 const PALETTE = [
-  "rgba(79,209,196,0.95)",  // teal
-  "rgba(99,102,241,0.95)",  // indigo
-  "rgba(236,72,153,0.95)",  // pink
-  "rgba(34,197,94,0.95)",   // green
-  "rgba(245,158,11,0.95)",  // amber
+  "rgba(79,209,196,0.95)", // teal
+  "rgba(99,102,241,0.95)", // indigo
+  "rgba(236,72,153,0.95)", // pink
+  "rgba(34,197,94,0.95)", // green
+  "rgba(245,158,11,0.95)", // amber
 ];
 
 function GlassTooltip({ active, payload, label }) {
@@ -29,7 +29,7 @@ function GlassTooltip({ active, payload, label }) {
       {payload.map((p) => (
         <Typography key={p.dataKey} className="muted" sx={{ fontSize: 12 }}>
           {p.name}:{" "}
-          <span style={{ fontWeight: 950, color: "rgba(255,255,255,0.92)" }}>
+          <span style={{ fontWeight: 950, color: "var(--text)" }}>
             {p.value}
           </span>
         </Typography>
@@ -53,17 +53,17 @@ export default function ActivityTrendLine({ labels = [], series = [] }) {
     <Box sx={{ width: "100%", height: 280 }}>
       <ResponsiveContainer>
         <LineChart data={data} margin={{ top: 8, right: 10, left: -10, bottom: 0 }}>
-          <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="4 6" />
+          <CartesianGrid stroke="var(--border-1)" strokeDasharray="4 6" />
           <XAxis
             dataKey="label"
-            tick={{ fill: "rgba(255,255,255,0.55)", fontSize: 11 }}
-            axisLine={{ stroke: "rgba(255,255,255,0.10)" }}
-            tickLine={{ stroke: "rgba(255,255,255,0.10)" }}
+            tick={{ fill: "var(--muted)", fontSize: 11 }}
+            axisLine={{ stroke: "var(--border-1)" }}
+            tickLine={{ stroke: "var(--border-1)" }}
           />
           <YAxis
-            tick={{ fill: "rgba(255,255,255,0.55)", fontSize: 11 }}
-            axisLine={{ stroke: "rgba(255,255,255,0.10)" }}
-            tickLine={{ stroke: "rgba(255,255,255,0.10)" }}
+            tick={{ fill: "var(--muted)", fontSize: 11 }}
+            axisLine={{ stroke: "var(--border-1)" }}
+            tickLine={{ stroke: "var(--border-1)" }}
           />
           <Tooltip content={<GlassTooltip />} />
 
@@ -80,7 +80,7 @@ export default function ActivityTrendLine({ labels = [], series = [] }) {
                 r: 5,
                 stroke: PALETTE[idx % PALETTE.length],
                 strokeWidth: 3,
-                fill: "rgba(7,13,24,1)",
+                fill: "var(--surface-1)",
               }}
             />
           ))}

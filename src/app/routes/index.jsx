@@ -11,6 +11,7 @@ import Overview from "../../pages/dashboard/Overview.jsx";
 import Logs from "../../pages/dashboard/Logs.jsx";
 import Screenshots from "../../pages/dashboard/Screenshots.jsx";
 import Users from "../../pages/dashboard/Users.jsx";
+import UserDetail from "../../pages/dashboard/UserDetail.jsx";
 import Insights from "../../pages/dashboard/Insights.jsx";
 import Settings from "../../pages/dashboard/Settings.jsx";
 
@@ -36,7 +37,10 @@ export default function AppRoutes() {
       <Route path="/dashboard/logs" element={<DashboardShell><Logs /></DashboardShell>} />
       <Route path="/dashboard/screenshots" element={<DashboardShell><Screenshots /></DashboardShell>} />
       <Route path="/dashboard/insights" element={<DashboardShell><Insights /></DashboardShell>} />
+
       <Route path="/dashboard/users" element={<DashboardShell><Users /></DashboardShell>} />
+      <Route path="/dashboard/users/:company_username" element={<DashboardShell><UserDetail /></DashboardShell>} />
+
       <Route path="/dashboard/settings" element={<DashboardShell><Settings /></DashboardShell>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />

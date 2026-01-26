@@ -63,3 +63,9 @@ export async function getInsightsHourly(params = {}) {
   const res = await http.get("/api/insights/hourly", { params: withDefaultRange(params) });
   return unwrap(res);
 }
+
+// Phase 6: single dashboard endpoint (KPIs + 8 charts)
+export async function getInsightsDashboard(params = {}) {
+  const res = await http.get("/api/insights/dashboard", { params: withDefaultRange(params) });
+  return unwrap(res);
+}

@@ -31,7 +31,7 @@ function GlassTooltip({ active, payload, label }) {
       </Typography>
       <Typography className="muted" sx={{ fontSize: 12 }}>
         Count:{" "}
-        <span style={{ fontWeight: 950, color: "rgba(255,255,255,0.92)" }}>
+        <span style={{ fontWeight: 950, color: "var(--text)" }}>
           {v}
         </span>
       </Typography>
@@ -44,25 +44,25 @@ export default function TopBarChart({ items = [] }) {
     <Box sx={{ width: "100%", height: 280 }}>
       <ResponsiveContainer>
         <BarChart data={items} margin={{ top: 8, right: 10, left: -10, bottom: 0 }}>
-          <CartesianGrid stroke="rgba(255,255,255,0.08)" strokeDasharray="4 6" />
+          <CartesianGrid stroke="var(--border-1)" strokeDasharray="4 6" />
           <XAxis
             dataKey="name"
-            tick={{ fill: "rgba(255,255,255,0.55)", fontSize: 11 }}
+            tick={{ fill: "var(--muted)", fontSize: 11 }}
             interval={0}
             angle={-18}
             textAnchor="end"
             height={60}
-            axisLine={{ stroke: "rgba(255,255,255,0.10)" }}
-            tickLine={{ stroke: "rgba(255,255,255,0.10)" }}
+            axisLine={{ stroke: "var(--border-1)" }}
+            tickLine={{ stroke: "var(--border-1)" }}
           />
           <YAxis
-            tick={{ fill: "rgba(255,255,255,0.55)", fontSize: 11 }}
-            axisLine={{ stroke: "rgba(255,255,255,0.10)" }}
-            tickLine={{ stroke: "rgba(255,255,255,0.10)" }}
+            tick={{ fill: "var(--muted)", fontSize: 11 }}
+            axisLine={{ stroke: "var(--border-1)" }}
+            tickLine={{ stroke: "var(--border-1)" }}
           />
           <Tooltip content={<GlassTooltip />} />
 
-          <Bar dataKey="count" radius={[10, 10, 10, 10]} stroke="rgba(255,255,255,0.10)" strokeWidth={1}>
+          <Bar dataKey="count" radius={[10, 10, 10, 10]} stroke="var(--border-1)" strokeWidth={1}>
             {items.map((_, i) => (
               <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
             ))}
