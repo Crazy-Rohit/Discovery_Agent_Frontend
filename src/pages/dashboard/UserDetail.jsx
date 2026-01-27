@@ -10,9 +10,15 @@ import {
   Tabs,
   TextField,
   Typography,
+  CircularProgress,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import UpdateRoundedIcon from "@mui/icons-material/UpdateRounded";
+import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
+import ViewModuleRoundedIcon from "@mui/icons-material/ViewModuleRounded";
+import ViewListRoundedIcon from "@mui/icons-material/ViewListRounded";
 import { useNavigate, useParams } from "react-router-dom";
 
 import PageHeader from "../../components/ui/PageHeader";
@@ -26,11 +32,11 @@ import { getUserApi, getUserAnalysisApi } from "../../features/users/users.api";
 import { getLogs, getScreenshots } from "../../services/data.api";
 
 /**
- * UserDetail.jsx (Fixed)
- * - Prevents repeated request loop
- * - Uses normalized username for filtering
- * - Parallel loads without UI blocking
- * - Robust response parsing
+ * UserDetail.jsx (UI upgrade, functionality preserved)
+ * - Keeps existing APIs & data-loading flow intact
+ * - Logs: proper table, Date+Time split, CSV + PDF download
+ * - Screenshots: Google-Drive-like Grid/List toggle + hyperlink for URL + UI-only tags column
+ * - Analysis: unchanged charts + KPI row
  */
 
 function ymdLocal(d) {
@@ -75,6 +81,30 @@ function normalizeListResponse(res) {
   return { items: [], total: 0 };
 }
 
+function safeText(v) {
+  if (v === null || v === undefined) return "—";
+  const s = String(v);
+  return s.trim() ? s : "—";
+}
+
+function fmtDate(ts) {
+  if (!ts) return "—";
+  try {
+    return new Date(ts).toISOString().slice(0, 10);
+  } catch {
+    return "—";
+  }
+}
+
+function fmtTime(ts) {
+  if (!ts) return "—";
+  try {
+    return new Date(ts).toISOString().slice(11, 19);
+  } catch {
+    return "—";
+  }
+}
+
 function KpiRow({ analysis }) {
   const k = analysis?.kpis || {};
   return (
@@ -94,76 +124,291 @@ function KpiRow({ analysis }) {
   );
 }
 
+function downloadLogsCSV(rows) {
+  const header = ["Date", "Time", "application", "window_title", "category", "operation", "details"];
+  const lines = [
+    header.join(","),
+    ...rows.map((r) =>
+      [
+        fmtDate(r.ts),
+        fmtTime(r.ts),
+        safeText(r.application),
+        safeText(r.window_title),
+        safeText(r.category),
+        safeText(r.operation),
+        safeText(r.details || r.detail),
+      ]
+        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+        .join(",")
+    ),
+  ];
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `logs_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function LogsTable({ rows = [] }) {
   return (
-    <Box className="iw-tableWrap">
-      <table className="iw-table">
-        <thead>
-          <tr>
-            <th>ts</th>
-            <th>application</th>
-            <th>window_title</th>
-            <th>category</th>
-            <th>operation</th>
-            <th>details</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 ? (
-            <tr>
-              <td colSpan={6} className="muted">No logs for this range.</td>
-            </tr>
-          ) : (
-            rows.map((r, idx) => (
-              <tr key={`${r.ts || ""}_${idx}`}>
-                <td style={{ whiteSpace: "nowrap" }}>{r.ts || "—"}</td>
-                <td>{r.application || "—"}</td>
-                <td title={r.window_title || ""}>{r.window_title || "—"}</td>
-                <td>{r.category || "—"}</td>
-                <td>{r.operation || "—"}</td>
-                <td title={r.details || r.detail || ""}>{r.details || r.detail || "—"}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+    <Box>
+      <Stack direction="row" spacing={1} sx={{ mb: 1 }} justifyContent="flex-end">
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<DownloadRoundedIcon />}
+          onClick={() => downloadLogsCSV(rows)}
+          sx={{ fontWeight: 900 }}
+        >
+          CSV
+        </Button>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<DownloadRoundedIcon />}
+          onClick={() => window.print()}
+          sx={{ fontWeight: 900 }}
+        >
+          PDF
+        </Button>
+      </Stack>
+
+      <Paper elevation={0} sx={{ overflow: "auto" }}>
+        {/* sticky header */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "120px 95px 160px 1.6fr 140px 140px 2fr",
+            px: 2,
+            py: 1,
+            fontWeight: 900,
+            fontSize: 13,
+            borderBottom: "1px solid rgba(0,0,0,0.08)",
+            position: "sticky",
+            top: 0,
+            zIndex: 1,
+            background: "background.paper",
+          }}
+        >
+          <div>Date</div>
+          <div>Time</div>
+          <div>Application</div>
+          <div>Window Title</div>
+          <div>Category</div>
+          <div>Operation</div>
+          <div>Details</div>
+        </Box>
+
+        {rows.length === 0 ? (
+          <Box sx={{ p: 2 }}>
+            <Typography color="text.secondary">No logs for this range.</Typography>
+          </Box>
+        ) : (
+          rows.map((r, idx) => (
+            <Box
+              key={`${r.ts || ""}_${idx}`}
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "120px 95px 160px 1.6fr 140px 140px 2fr",
+                px: 2,
+                py: 1,
+                fontSize: 13,
+                borderBottom: "1px solid rgba(0,0,0,0.05)",
+                "&:hover": { background: "rgba(0,0,0,0.03)" },
+              }}
+            >
+              <div style={{ whiteSpace: "nowrap" }}>{fmtDate(r.ts)}</div>
+              <div style={{ whiteSpace: "nowrap" }}>{fmtTime(r.ts)}</div>
+              <div title={safeText(r.application)} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {safeText(r.application)}
+              </div>
+              <div title={safeText(r.window_title)} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {safeText(r.window_title)}
+              </div>
+              <div title={safeText(r.category)} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {safeText(r.category)}
+              </div>
+              <div title={safeText(r.operation)} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {safeText(r.operation)}
+              </div>
+              <div title={safeText(r.details || r.detail)} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {safeText(r.details || r.detail)}
+              </div>
+            </Box>
+          ))
+        )}
+      </Paper>
     </Box>
   );
 }
 
-function ScreensTable({ rows = [] }) {
+function isHttpUrl(u) {
+  return typeof u === "string" && (u.startsWith("http://") || u.startsWith("https://"));
+}
+
+function ScreenshotGrid({ rows = [] }) {
   return (
-    <Box className="iw-tableWrap">
-      <table className="iw-table">
-        <thead>
-          <tr>
-            <th>ts</th>
-            <th>application</th>
-            <th>window_title</th>
-            <th>label</th>
-            <th>file_path</th>
-            <th>screenshot_url</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 ? (
-            <tr>
-              <td colSpan={6} className="muted">No screenshots for this range.</td>
-            </tr>
-          ) : (
-            rows.map((r, idx) => (
-              <tr key={`${r.ts || ""}_${idx}`}>
-                <td style={{ whiteSpace: "nowrap" }}>{r.ts || "—"}</td>
-                <td>{r.application || "—"}</td>
-                <td title={r.window_title || ""}>{r.window_title || "—"}</td>
-                <td>{r.label || "—"}</td>
-                <td title={r.file_path || ""}>{r.file_path || "—"}</td>
-                <td title={r.screenshot_url || ""}>{r.screenshot_url || "—"}</td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+        gap: 2,
+      }}
+    >
+      {rows.length === 0 ? (
+        <Paper elevation={0} sx={{ p: 2 }}>
+          <Typography color="text.secondary">No screenshots for this range.</Typography>
+        </Paper>
+      ) : (
+        rows.map((r, idx) => (
+          <Paper
+            key={`${r.ts || ""}_${idx}`}
+            elevation={0}
+            sx={{
+              p: 1,
+              borderRadius: 2,
+              border: "1px solid rgba(0,0,0,0.06)",
+              "&:hover": { background: "rgba(0,0,0,0.03)" },
+            }}
+          >
+            <Box
+              sx={{
+                height: 140,
+                borderRadius: 1,
+                overflow: "hidden",
+                background: "rgba(0,0,0,0.06)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {isHttpUrl(r.screenshot_url) ? (
+                <img
+                  src={r.screenshot_url}
+                  alt="screenshot"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
+                <Typography variant="caption" color="text.secondary">
+                  No preview
+                </Typography>
+              )}
+            </Box>
+
+            <Typography sx={{ fontSize: 13, fontWeight: 700, mt: 1 }} noWrap title={safeText(r.window_title)}>
+              {safeText(r.window_title)}
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: "text.secondary" }} noWrap title={safeText(r.application)}>
+              {safeText(r.application)} • {safeText(r.label)}
+            </Typography>
+
+            <Stack direction="row" spacing={1} sx={{ mt: 1 }} alignItems="center" justifyContent="space-between">
+              <Chip size="small" variant="outlined" label="OCR: UI only" />
+              {r.screenshot_url ? (
+                <a href={r.screenshot_url} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>
+                  Open
+                </a>
+              ) : null}
+            </Stack>
+          </Paper>
+        ))
+      )}
+    </Box>
+  );
+}
+
+function ScreenshotList({ rows = [] }) {
+  return (
+    <Paper elevation={0} sx={{ overflow: "auto" }}>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "200px 160px 1.6fr 110px 1.6fr 140px",
+          px: 2,
+          py: 1,
+          fontWeight: 900,
+          fontSize: 13,
+          borderBottom: "1px solid rgba(0,0,0,0.08)",
+          position: "sticky",
+          top: 0,
+          zIndex: 1,
+          background: "background.paper",
+        }}
+      >
+        <div>ts</div>
+        <div>application</div>
+        <div>window_title</div>
+        <div>label</div>
+        <div>screenshot_url</div>
+        <div>tags (OCR)</div>
+      </Box>
+
+      {rows.length === 0 ? (
+        <Box sx={{ p: 2 }}>
+          <Typography color="text.secondary">No screenshots for this range.</Typography>
+        </Box>
+      ) : (
+        rows.map((r, idx) => (
+          <Box
+            key={`${r.ts || ""}_${idx}`}
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "200px 160px 1.6fr 110px 1.6fr 140px",
+              px: 2,
+              py: 1,
+              fontSize: 13,
+              borderBottom: "1px solid rgba(0,0,0,0.05)",
+              "&:hover": { background: "rgba(0,0,0,0.03)" },
+            }}
+          >
+            <div style={{ whiteSpace: "nowrap" }}>{safeText(r.ts)}</div>
+            <div title={safeText(r.application)} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {safeText(r.application)}
+            </div>
+            <div title={safeText(r.window_title)} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {safeText(r.window_title)}
+            </div>
+            <div>{safeText(r.label)}</div>
+            <div title={safeText(r.screenshot_url)} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {r.screenshot_url ? (
+                <a href={r.screenshot_url} target="_blank" rel="noreferrer">
+                  {safeText(r.screenshot_url)}
+                </a>
+              ) : (
+                "—"
+              )}
+            </div>
+            <div>
+              <Chip size="small" variant="outlined" label="UI only" />
+            </div>
+          </Box>
+        ))
+      )}
+    </Paper>
+  );
+}
+
+function ScreenshotsSection({ rows = [] }) {
+  const [view, setView] = useState("grid"); // grid | list
+
+  return (
+    <Box>
+      <Stack direction="row" justifyContent="flex-end" sx={{ mb: 1 }}>
+        <Tooltip title="Grid">
+          <IconButton size="small" onClick={() => setView("grid")} aria-label="Grid view">
+            <ViewModuleRoundedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="List">
+          <IconButton size="small" onClick={() => setView("list")} aria-label="List view">
+            <ViewListRoundedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </Stack>
+
+      {view === "grid" ? <ScreenshotGrid rows={rows} /> : <ScreenshotList rows={rows} />}
     </Box>
   );
 }
@@ -229,6 +474,7 @@ export default function UserDetail() {
         setLogsLoading(true);
         setShotsLoading(true);
 
+        // IMPORTANT: keep original param names (company_username) to avoid breaking APIs
         const [aRes, lRes, sRes] = await Promise.allSettled([
           getUserAnalysisApi(userKey, params),
           getLogs({ ...params, company_username: userKey, page: 1, limit: 200 }),
@@ -357,7 +603,12 @@ export default function UserDetail() {
       {userLoading ? (
         <Typography className="muted">Loading user…</Typography>
       ) : contentLoading ? (
-        <Typography className="muted">Loading…</Typography>
+        <Box sx={{ py: 4, display: "grid", placeItems: "center" }}>
+          <CircularProgress />
+          <Typography className="muted" sx={{ mt: 2 }}>
+            Loading…
+          </Typography>
+        </Box>
       ) : tab === 0 ? (
         <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: "repeat(12, 1fr)" }}>
           <Box sx={{ gridColumn: { xs: "span 12", lg: "span 7" } }}>
@@ -413,7 +664,7 @@ export default function UserDetail() {
         </Paper>
       ) : (
         <Paper className="glass" elevation={0} sx={{ p: 2 }}>
-          <ScreensTable rows={shots?.items || []} />
+          <ScreenshotsSection rows={shots?.items || []} />
         </Paper>
       )}
     </Box>

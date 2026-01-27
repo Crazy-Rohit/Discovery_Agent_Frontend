@@ -9,8 +9,6 @@ import Login from "../../pages/auth/Login.jsx";
 import Register from "../../pages/auth/Register.jsx";
 
 import Overview from "../../pages/dashboard/Overview.jsx";
-import Logs from "../../pages/dashboard/Logs.jsx";
-import Screenshots from "../../pages/dashboard/Screenshots.jsx";
 import Users from "../../pages/dashboard/Users.jsx";
 import UserDetail from "../../pages/dashboard/UserDetail.jsx";
 import Insights from "../../pages/dashboard/Insights.jsx";
@@ -37,22 +35,6 @@ export default function AppRoutes() {
 
       <Route path="/dashboard/overview" element={<DashboardShell><Overview /></DashboardShell>} />
 
-      <Route
-        path="/dashboard/logs"
-        element={
-          <DashboardShell>
-            <UserScopedRoute><Logs /></UserScopedRoute>
-          </DashboardShell>
-        }
-      />
-      <Route
-        path="/dashboard/screenshots"
-        element={
-          <DashboardShell>
-            <UserScopedRoute><Screenshots /></UserScopedRoute>
-          </DashboardShell>
-        }
-      />
       <Route
         path="/dashboard/insights"
         element={

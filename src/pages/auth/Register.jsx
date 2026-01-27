@@ -11,6 +11,10 @@ import {
   FormControlLabel,
   InputAdornment,
   IconButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
@@ -19,9 +23,17 @@ import { useNavigate } from "react-router-dom";
 import { registerApi } from "../../features/auth/auth.api";
 import WavyBackground from "../../components/ui/WavyBackground";
 
+/**
+ * Registration is ONLY for:
+ *  - C_SUITE (Admin)
+ *  - DEPARTMENT_HEAD (Manager)
+ *
+ * Department is required only for DEPARTMENT_HEAD.
+ */
 export default function Register() {
   const nav = useNavigate();
 
+  const [role, setRole] = useState("DEPARTMENT_HEAD"); // default to manager
   const [fullName, setFullName] = useState("");
   const [contactNo, setContactNo] = useState("");
   const [department, setDepartment] = useState("");
@@ -35,10 +47,15 @@ export default function Register() {
   const [err, setErr] = useState("");
   const [showPass, setShowPass] = useState(false);
 
+  const needsDepartment = role === "DEPARTMENT_HEAD";
+
   const canSubmit = useMemo(() => {
-    if (!fullName.trim() || !contactNo.trim() || !department.trim() || !email.trim() || !password.trim()) return false;
+    if (!role) return false;
+    if (!fullName.trim() || !contactNo.trim() || !email.trim() || !password.trim()) return false;
+    if (needsDepartment && !department.trim()) return false;
+    if (!licenseAccepted) return false;
     return true;
-  }, [fullName, contactNo, department, email, password]);
+  }, [role, fullName, contactNo, department, email, password, needsDepartment, licenseAccepted]);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -49,19 +66,23 @@ export default function Register() {
     try {
       const cleanEmail = email.trim().toLowerCase();
 
-      // ✅ Phase 4.7: registration is for DEPARTMENT_MEMBER only
+      // NOTE:
+      // - If role is C_SUITE (Admin), department is not required and will be omitted.
+      // - If role is DEPARTMENT_HEAD, department is required.
       const payload = {
         email: cleanEmail,
         company_username: cleanEmail,
         password,
 
-        department: department.trim(),
+        role, // "C_SUITE" | "DEPARTMENT_HEAD"
         full_name: fullName.trim(),
         contact_no: contactNo.trim(),
 
         license_accepted: !!licenseAccepted,
         license_version: "1.3",
       };
+
+      if (needsDepartment) payload.department = department.trim();
 
       const data = await registerApi(payload);
       setMsg(data?.message || "Registration successful. You can now sign in.");
@@ -74,10 +95,21 @@ export default function Register() {
   }
 
   return (
-    <Box className="login-shell" sx={{ position: "relative" }}>
+    <Box
+      className="login-shell"
+      sx={{
+        position: "relative",
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        px: 2,
+      }}
+    >
       <WavyBackground />
 
-      <Box sx={{ position: "relative" }}>
+      {/* Keep everything centered */}
+      <Box sx={{ position: "relative", width: "100%", display: "flex", justifyContent: "center" }}>
         <div className="login-glow" aria-hidden="true" />
 
         <Paper
@@ -97,29 +129,73 @@ export default function Register() {
             Create account
           </Typography>
 
-          <Typography sx={{ color: "text.secondary", mb: 1.5 }}>
-            This registration is for <b>Department Users</b> (data capture only).
-          </Typography>
-          <Typography sx={{ color: "text.secondary", mb: 3 }}>
-            Managers/Admins are created by C-Suite from the dashboard.
+          <Typography sx={{ color: "text.secondary", mb: 2.5 }}>
+            Registration is for <b>C-Suite (Admin)</b> and <b>Department Head (Manager)</b> only.
           </Typography>
 
           <form onSubmit={onSubmit}>
             <Stack spacing={2.2}>
+              <FormControl fullWidth>
+                <InputLabel id="role-label">Account Type</InputLabel>
+                <Select
+                  labelId="role-label"
+                  label="Account Type"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                >
+                  <MenuItem value="C_SUITE">C-Suite (Admin)</MenuItem>
+                  <MenuItem value="DEPARTMENT_HEAD">Department Head (Manager)</MenuItem>
+                </Select>
+              </FormControl>
+
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <TextField fullWidth label="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-                <TextField fullWidth label="Contact No" value={contactNo} onChange={(e) => setContactNo(e.target.value)} required />
+                <TextField
+                  fullWidth
+                  label="Full Name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                />
+                <TextField
+                  fullWidth
+                  label="Contact No"
+                  value={contactNo}
+                  onChange={(e) => setContactNo(e.target.value)}
+                  required
+                />
               </Stack>
 
+              {needsDepartment ? (
+                <TextField
+                  label="Department (string)"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  placeholder="IT / HR / Sales"
+                  required
+                />
+              ) : (
+                <Box
+                  sx={{
+                    px: 1.5,
+                    py: 1.25,
+                    borderRadius: 2,
+                    border: "1px dashed",
+                    borderColor: "divider",
+                    bgcolor: "background.paper",
+                  }}
+                >
+                  <Typography sx={{ color: "text.secondary", fontSize: 13 }}>
+                    Department is not required for <b>C-Suite (Admin)</b> registration.
+                  </Typography>
+                </Box>
+              )}
+
               <TextField
-                label="Department (string)"
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                placeholder="IT / HR / Sales"
+                label="Company Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
-
-              <TextField label="Company Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
 
               <TextField
                 label="Password"

@@ -68,11 +68,8 @@ export default function Settings() {
               <Button variant="contained" onClick={() => nav("/dashboard/users")} sx={{ fontWeight: 950 }}>
                 View Department Users
               </Button>
-              <Button variant="outlined" onClick={() => nav("/dashboard/logs")} sx={{ fontWeight: 950 }}>
-                View Department Logs
-              </Button>
-              <Button variant="outlined" onClick={() => nav("/dashboard/screenshots")} sx={{ fontWeight: 950 }}>
-                View Screenshots
+              <Button variant="outlined" onClick={() => nav("/dashboard/overview")} sx={{ fontWeight: 950 }}>
+                View Department Summary
               </Button>
             </Stack>
           </>

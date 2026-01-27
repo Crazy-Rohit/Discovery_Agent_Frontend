@@ -1,5 +1,4 @@
 import React, { useContext, useState, useEffect } from "react";
-
 import {
   Box,
   Button,
@@ -34,7 +33,6 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
-  // Forgot password dialog state
   const [fpOpen, setFpOpen] = useState(false);
   const [fpPass, setFpPass] = useState("");
   const [fpPass2, setFpPass2] = useState("");
@@ -88,17 +86,26 @@ export default function Login() {
   }, []);
 
   return (
-    <Box className="login-shell" sx={{ position: "relative" }}>
+    <Box
+      className="login-shell"
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        position: "relative",
+        px: 2,
+      }}
+    >
       <WavyBackground />
 
-      <Box sx={{ position: "relative" }}>
+      <Box sx={{ position: "relative", width: "100%", display: "flex", justifyContent: "center" }}>
         <div className="login-glow" aria-hidden="true" />
 
         <Paper
           className="glass login-card"
           elevation={0}
           sx={{
-            position: "relative",
             p: 3,
             width: 420,
             maxWidth: "92vw",
@@ -116,13 +123,20 @@ export default function Login() {
 
           <form onSubmit={onSubmit}>
             <Stack spacing={2.2}>
-              <TextField label="Company Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <TextField
+                label="Company Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                fullWidth
+                required
+              />
 
               <TextField
                 label="Password"
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                fullWidth
                 required
                 InputProps={{
                   endAdornment: (
@@ -137,14 +151,13 @@ export default function Login() {
 
               {err ? <Typography color="error">{err}</Typography> : null}
 
-              <Button type="submit" variant="contained" size="large" disabled={busy}>
+              <Button type="submit" variant="contained" size="large" disabled={busy} fullWidth>
                 {busy ? "Signing in..." : "Sign in"}
               </Button>
 
               <Stack direction="row" justifyContent="space-between">
                 <Link
                   component="button"
-                  type="button"
                   underline="hover"
                   onClick={() => {
                     setFpErr("");
@@ -158,7 +171,7 @@ export default function Login() {
                   Forgot password?
                 </Link>
 
-                <Link component="button" type="button" underline="hover" onClick={() => nav("/register")} sx={{ fontSize: 14 }}>
+                <Link component="button" underline="hover" onClick={() => nav("/register")} sx={{ fontSize: 14 }}>
                   Create account
                 </Link>
               </Stack>
@@ -181,6 +194,7 @@ export default function Login() {
               type={fpShowPass ? "text" : "password"}
               value={fpPass}
               onChange={(e) => setFpPass(e.target.value)}
+              fullWidth
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -197,6 +211,7 @@ export default function Login() {
               type={fpShowPass2 ? "text" : "password"}
               value={fpPass2}
               onChange={(e) => setFpPass2(e.target.value)}
+              fullWidth
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
