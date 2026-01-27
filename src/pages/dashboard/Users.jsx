@@ -29,6 +29,7 @@ import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
 
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../app/providers/AuthProvider";
+import { useUserSelection } from "../../app/providers/UserSelectionProvider";
 import PageHeader from "../../components/ui/PageHeader";
 
 import { listUsersApi, createUserApi, updateUserApi } from "../../features/users/users.api";
@@ -140,6 +141,7 @@ function UserRow({ u, onOpen }) {
 export default function Users() {
   const nav = useNavigate();
   const { me } = useAuth();
+  const { setSelectedUser } = useUserSelection();
 
   const role = String(me?.role_key || me?.role || "").toUpperCase();
   const canAccess = role === ROLE_C_SUITE || role === ROLE_DEPT_HEAD;
@@ -201,6 +203,15 @@ export default function Users() {
   const filtered = useMemo(() => {
     let rows = Array.isArray(users) ? [...users] : [];
 
+    // hide logged-in user from the list
+    const meEmail = String(me?.company_username_norm || me?.company_username || me?.email || "").trim().toLowerCase();
+    if (meEmail) {
+      rows = rows.filter((u) => {
+        const uEmail = String(u?.company_username_norm || u?.company_username || u?.email || "").trim().toLowerCase();
+        return uEmail !== meEmail;
+      });
+    }
+
     // dept filter
     if (deptFilter) {
       rows = rows.filter((u) => String(u.department || "").toLowerCase() === String(deptFilter).toLowerCase());
@@ -223,11 +234,22 @@ export default function Users() {
     }
 
     return rows;
-  }, [users, deptFilter, q, sort]);
+  }, [users, deptFilter, q, sort, me]);
 
   function openUser(u) {
     const email = u.company_username_norm || u.company_username;
     if (!email) return;
+
+    // persist selection so user-scoped pages unlock (Logs / Screenshots / Insights)
+    setSelectedUser({
+      company_username_norm: u.company_username_norm || email,
+      company_username: u.company_username || email,
+      full_name: u.full_name || "",
+      department: u.department || "",
+      user_mac_id: u.user_mac_id || "",
+      role_key: u.role_key || "",
+    });
+
     nav(`/dashboard/users/${encodeURIComponent(email)}`);
   }
 

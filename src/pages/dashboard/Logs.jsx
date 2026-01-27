@@ -19,6 +19,7 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 
 import ChartCard from "../../components/charts/ChartCard";
 import PageHeader from "../../components/ui/PageHeader";
+import { useUserSelection } from "../../app/providers/UserSelectionProvider";
 
 import { getLogs } from "../../services/data.api";
 import { defaultRangeLast7Days } from "../../utils/dateRange";
@@ -52,6 +53,10 @@ function truncate(s, n = 70) {
 }
 
 export default function Logs() {
+  const { selectedUser } = useUserSelection();
+  const selectedUserKey =
+    selectedUser?.company_username_norm || selectedUser?.company_username || "";
+
   const range = useMemo(() => defaultRangeLast7Days(), []);
   const LIMIT = 100;
 
@@ -68,7 +73,7 @@ export default function Logs() {
     setLoading(true);
     setErr("");
     try {
-      const data = await getLogs({ ...range, page: 1, limit: LIMIT });
+      const data = await getLogs({ ...range, page: 1, limit: LIMIT, user: selectedUserKey || undefined });
       setItems(data?.items || []);
       setPage(data?.page || 1);
       setTotal(data?.total || 0);
@@ -88,7 +93,7 @@ export default function Logs() {
     setErr("");
     try {
       const nextPage = page + 1;
-      const data = await getLogs({ ...range, page: nextPage, limit: LIMIT });
+      const data = await getLogs({ ...range, page: nextPage, limit: LIMIT, user: selectedUserKey || undefined });
       setItems((prev) => [...prev, ...(data?.items || [])]);
       setPage(data?.page || nextPage);
       setTotal(data?.total || total);
@@ -100,11 +105,18 @@ export default function Logs() {
   }
 
   useEffect(() => {
+    if (!selectedUserKey) {
+      setLoading(false);
+      setErr("Select a user to view logs");
+      setItems([]);
+      setTotal(0);
+      setPage(1);
+      return;
+    }
     loadFirst();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const canMore = items.length < total;
+  }, [selectedUserKey]);
+const canMore = items.length < total;
   const detailsText = openRow ? getDetails(openRow) : "-";
 
   return (

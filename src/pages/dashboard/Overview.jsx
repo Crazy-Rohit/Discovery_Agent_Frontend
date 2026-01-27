@@ -1,76 +1,89 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Box, Grid, Typography, Paper, Chip, CircularProgress } from "@mui/material";
+import { Box, Grid, Typography, Paper, Chip, CircularProgress, Divider } from "@mui/material";
 
+import PageHeader from "../../components/ui/PageHeader";
 import ChartCard from "../../components/charts/ChartCard";
 import ActivityTrendLine from "../../components/charts/ActivityTrendLine";
 import TopBarChart from "../../components/charts/TopBarChart";
-import PageHeader from "../../components/ui/PageHeader";
+import CategoryPie from "../../components/charts/CategoryPie";
+import WeekHourHeatmap from "../../components/charts/WeekHourHeatmap";
+import StackedAreaTrend from "../../components/charts/StackedAreaTrend";
+import SimpleBarSeries from "../../components/charts/SimpleBarSeries";
 
-import { getInsightsSummary, getInsightsTimeseries, getInsightsTop } from "../../services/analytics";
-
-import PeopleAltRoundedIcon from "@mui/icons-material/PeopleAltRounded";
-import DesktopWindowsRoundedIcon from "@mui/icons-material/DesktopWindowsRounded";
-import ArticleRoundedIcon from "@mui/icons-material/ArticleRounded";
-import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
-
-function KpiCard({ title, value, icon }) {
-  return (
-    <Paper
-      className="glass glass-hover iw-fixedCard"
-      elevation={0}
-      sx={{ p: 2, position: "relative", overflow: "hidden" }}
-    >
-      <Box
-        sx={{
-          position: "absolute",
-          inset: "-60px -70px auto auto",
-          width: 220,
-          height: 220,
-          borderRadius: "50%",
-          background: "radial-gradient(circle at 30% 30%, rgba(79,209,196,0.18), transparent 60%)",
-          pointerEvents: "none",
-        }}
-      />
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.2 }}>
-        <Box
-          sx={{
-            width: 40,
-            height: 40,
-            borderRadius: 10,
-            border: "1px solid rgba(255,255,255,0.12)",
-            background:
-              "radial-gradient(18px 18px at 30% 30%, rgba(79,209,196,0.95), rgba(79,209,196,0.10))",
-            display: "grid",
-            placeItems: "center",
-          }}
-        >
-          {icon}
-        </Box>
-
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="caption" className="muted">
-            {title}
-          </Typography>
-          <Typography sx={{ fontWeight: 950, fontSize: 22, mt: 0.2 }}>{value}</Typography>
-        </Box>
-      </Box>
-    </Paper>
-  );
-}
+import { getInsightsDashboard } from "../../services/analytics";
+import { useUserSelection } from "../../app/providers/UserSelectionProvider";
 
 function formatNumber(n) {
   const x = Number(n || 0);
   return x.toLocaleString();
 }
 
+function Narrative({ range, scope, kpis }) {
+  const from = range?.from || "—";
+  const to = range?.to || "—";
+
+  const logs = formatNumber(kpis?.logs);
+  const shots = formatNumber(kpis?.screenshots);
+  const users = formatNumber(kpis?.unique_users);
+  const activeMin = formatNumber(kpis?.total_active_minutes);
+  const app = kpis?.most_used_app || "—";
+  const cat = kpis?.top_category || "—";
+
+  return (
+    <Paper className="glass" elevation={0} sx={{ p: 2 }}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
+        <Box>
+          <Typography sx={{ fontWeight: 950, fontSize: 18 }}>Narrative summary</Typography>
+          <Typography className="muted" sx={{ mt: 0.5 }}>
+            Range: <span style={{ color: "var(--text)", fontWeight: 800 }}>{from}</span> →{" "}
+            <span style={{ color: "var(--text)", fontWeight: 800 }}>{to}</span>
+            {scope?.label ? (
+              <>
+                {" "}
+                • Scope: <span style={{ color: "var(--text)", fontWeight: 800 }}>{scope.label}</span>
+              </>
+            ) : null}
+          </Typography>
+        </Box>
+
+        {kpis?.last_updated ? (
+          <Chip
+            size="small"
+            label={`Last updated: ${kpis.last_updated}`}
+            variant="outlined"
+            sx={{
+              borderColor: "var(--border-2)",
+              color: "var(--muted)",
+              fontWeight: 900,
+            }}
+          />
+        ) : null}
+      </Box>
+
+      <Divider sx={{ my: 1.5, borderColor: "var(--border-2)" }} />
+
+      <Typography sx={{ lineHeight: 1.7 }}>
+        In this period, the system captured{" "}
+        <span style={{ fontWeight: 950 }}>{logs}</span> logs and{" "}
+        <span style={{ fontWeight: 950 }}>{shots}</span> screenshots across{" "}
+        <span style={{ fontWeight: 950 }}>{users}</span> active user(s). Total active time is{" "}
+        <span style={{ fontWeight: 950 }}>{activeMin}</span> minutes. The most used application is{" "}
+        <span style={{ fontWeight: 950 }}>{app}</span>, and the top activity category is{" "}
+        <span style={{ fontWeight: 950 }}>{cat}</span>.
+      </Typography>
+    </Paper>
+  );
+}
+
 export default function Overview() {
+  const { selectedUser } = useUserSelection();
+  const selectedUserKey = selectedUser?.company_username_norm || selectedUser?.company_username || "";
+
   const [loading, setLoading] = useState(true);
-  const [summary, setSummary] = useState(null);
-  const [trend, setTrend] = useState({ labels: [], series: [] });
-  const [topSignals, setTopSignals] = useState([]);
+  const [dash, setDash] = useState(null);
   const [error, setError] = useState("");
 
-  const queryParams = useMemo(() => ({}), []);
+  const queryParams = useMemo(() => ({ user: selectedUserKey || undefined }), [selectedUserKey]);
 
   useEffect(() => {
     let mounted = true;
@@ -79,27 +92,22 @@ export default function Overview() {
       setLoading(true);
       setError("");
 
+      // Overview is intended to be user-scoped in the new flow
+      if (!selectedUserKey) {
+        setDash(null);
+        setLoading(false);
+        setError("Select a user to view overview analytics.");
+        return;
+      }
+
       try {
-        const [s, t, top] = await Promise.all([
-          getInsightsSummary(queryParams),
-          getInsightsTimeseries(queryParams),
-          getInsightsTop({ ...queryParams, by: "category", limit: 10 }),
-        ]);
-
+        const d = await getInsightsDashboard(queryParams);
         if (!mounted) return;
-
-        setSummary(s || null);
-        setTrend({
-          labels: Array.isArray(t?.labels) ? t.labels : [],
-          series: Array.isArray(t?.series) ? t.series : [],
-        });
-        setTopSignals(Array.isArray(top?.items) ? top.items : []);
+        setDash(d || null);
       } catch (e) {
         if (!mounted) return;
         setError(e?.message || "Failed to load analytics.");
-        setSummary(null);
-        setTrend({ labels: [], series: [] });
-        setTopSignals([]);
+        setDash(null);
       } finally {
         if (!mounted) return;
         setLoading(false);
@@ -110,23 +118,18 @@ export default function Overview() {
     return () => {
       mounted = false;
     };
-  }, [queryParams]);
+  }, [queryParams, selectedUserKey]);
 
-  const totals = summary?.totals || {};
-  const range = summary?.range || {};
-
-  const kpis = [
-    { title: "Active Users", value: formatNumber(totals.unique_users), icon: <PeopleAltRoundedIcon /> },
-    { title: "Logs", value: formatNumber(totals.logs), icon: <ArticleRoundedIcon /> },
-    { title: "Screenshots", value: formatNumber(totals.screenshots), icon: <DesktopWindowsRoundedIcon /> },
-    { title: "Alerts", value: formatNumber(0), icon: <WarningAmberRoundedIcon /> },
-  ];
+  const range = dash?.range || {};
+  const scope = dash?.scope || {};
+  const kpis = dash?.kpis || {};
+  const charts = dash?.charts || {};
 
   return (
     <Box>
       <PageHeader
-        title="System Overview"
-        subtitle={`Range: ${range.from || "—"} to ${range.to || "—"}`}
+        title={selectedUserKey ? "User Overview" : "Overview"}
+        subtitle={selectedUserKey ? `Selected user: ${selectedUserKey}` : "Select a user to begin"}
         right={
           loading ? (
             <Chip
@@ -136,7 +139,7 @@ export default function Overview() {
               sx={{
                 borderColor: "rgba(79,209,196,0.22)",
                 backgroundColor: "rgba(79,209,196,0.06)",
-                color: "rgba(255,255,255,0.78)",
+                color: "var(--text)",
                 fontWeight: 900,
               }}
             />
@@ -147,7 +150,7 @@ export default function Overview() {
               sx={{
                 borderColor: "rgba(79,209,196,0.22)",
                 backgroundColor: "rgba(79,209,196,0.06)",
-                color: "rgba(255,255,255,0.78)",
+                color: "var(--text)",
                 fontWeight: 900,
               }}
             />
@@ -161,26 +164,66 @@ export default function Overview() {
         </Paper>
       ) : null}
 
-      {/* KPI Row */}
-      <Grid container spacing={2}>
-        {kpis.map((k) => (
-          <Grid key={k.title} item xs={12} sm={6} lg={3}>
-            <KpiCard {...k} />
-          </Grid>
-        ))}
-      </Grid>
+      {!error && dash ? <Narrative range={range} scope={scope} kpis={kpis} /> : null}
 
-      {/* Charts Row */}
-      <Grid container spacing={2}>
-        <Grid item xs={12} lg={7}>
-          <ChartCard title="Activity Trend" subtitle="Logs per day">
-            <ActivityTrendLine labels={trend.labels} series={trend.series} />
+      {/* Charts grid: 2-per-row on large screens */}
+      <Grid container spacing={2} sx={{ mt: 0 }}>
+        <Grid item xs={12} lg={6}>
+          <ChartCard title="Activity Over Time" subtitle="Active minutes per day">
+            <ActivityTrendLine
+              labels={Array.isArray(charts?.activity_over_time?.labels) ? charts.activity_over_time.labels : []}
+              series={Array.isArray(charts?.activity_over_time?.series) ? charts.activity_over_time.series : []}
+            />
           </ChartCard>
         </Grid>
 
-        <Grid item xs={12} lg={5}>
+        <Grid item xs={12} lg={6}>
+          <ChartCard title="Screenshots Over Time" subtitle="Screenshots per day">
+            <ActivityTrendLine
+              labels={Array.isArray(charts?.screenshots_over_time?.labels) ? charts.screenshots_over_time.labels : []}
+              series={Array.isArray(charts?.screenshots_over_time?.series) ? charts.screenshots_over_time.series : []}
+            />
+          </ChartCard>
+        </Grid>
+
+        <Grid item xs={12} lg={6}>
+          <ChartCard title="Top Applications" subtitle="Most used apps">
+            <TopBarChart items={Array.isArray(charts?.top_apps?.items) ? charts.top_apps.items : []} />
+          </ChartCard>
+        </Grid>
+
+        <Grid item xs={12} lg={6}>
           <ChartCard title="Top Categories" subtitle="Most frequent categories">
-            <TopBarChart items={topSignals} />
+            <TopBarChart items={Array.isArray(charts?.top_categories?.items) ? charts.top_categories.items : []} />
+          </ChartCard>
+        </Grid>
+
+        <Grid item xs={12} lg={6}>
+          <ChartCard title="Category Distribution" subtitle="Share of activity by category">
+            <CategoryPie items={Array.isArray(charts?.category_distribution?.items) ? charts.category_distribution.items : []} />
+          </ChartCard>
+        </Grid>
+
+        <Grid item xs={12} lg={6}>
+          <ChartCard title="Week × Hour Heatmap" subtitle="When activity happens (weekday vs hour)">
+            <WeekHourHeatmap weekHour={charts?.hourly_heatmap?.week_hour || {}} />
+          </ChartCard>
+        </Grid>
+
+        <Grid item xs={12} lg={6}>
+          <ChartCard title="Apps Trend" subtitle="Daily app activity (stacked)">
+            <StackedAreaTrend rows={Array.isArray(charts?.apps_trend?.rows) ? charts.apps_trend.rows : []} keys={Array.isArray(charts?.apps_trend?.keys) ? charts.apps_trend.keys : []} />
+          </ChartCard>
+        </Grid>
+
+        <Grid item xs={12} lg={6}>
+          <ChartCard title="Active by Weekday" subtitle="Total active minutes by weekday">
+            <SimpleBarSeries
+              labels={Array.isArray(charts?.active_by_weekday?.labels) ? charts.active_by_weekday.labels : []}
+              data={Array.isArray(charts?.active_by_weekday?.data) ? charts.active_by_weekday.data : []}
+              valueName="Active Minutes"
+              unit="min"
+            />
           </ChartCard>
         </Grid>
       </Grid>

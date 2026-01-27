@@ -17,6 +17,7 @@ import UpdateRoundedIcon from "@mui/icons-material/UpdateRounded";
 
 import { useNavigate, useParams } from "react-router-dom";
 import PageHeader from "../../components/ui/PageHeader";
+import { useUserSelection } from "../../app/providers/UserSelectionProvider";
 
 import ChartCard from "../../components/charts/ChartCard";
 import ActivityTrendLine from "../../components/charts/ActivityTrendLine";
@@ -143,6 +144,7 @@ function ScreensTable({ rows = [] }) {
 
 export default function UserDetail() {
   const nav = useNavigate();
+  const { selectedUser, setSelectedUser } = useUserSelection();
   const { company_username } = useParams();
 
   const def = useMemo(() => defaultLast7(), []);
@@ -173,6 +175,16 @@ export default function UserDetail() {
         if (!mounted) return;
         setUser(u);
 
+        // keep global selected-user context in sync (enables UserScopedRoute pages)
+        setSelectedUser({
+          company_username_norm: u?.company_username_norm || u?.company_username || company_username,
+          company_username: u?.company_username || u?.company_username_norm || company_username,
+          full_name: u?.full_name || "",
+          department: u?.department || "",
+          user_mac_id: u?.user_mac_id || "",
+          role_key: u?.role_key || "",
+        });
+
         const a = await getUserAnalysisApi(company_username, params);
         if (!mounted) return;
         setAnalysis(a);
@@ -197,7 +209,7 @@ export default function UserDetail() {
 
     load();
     return () => { mounted = false; };
-  }, [company_username, params]);
+  }, [company_username, params, setSelectedUser]);
 
   const title = user?.full_name || user?.company_username_norm || user?.company_username || "User";
 

@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 
 import PageHeader from "../../components/ui/PageHeader";
+import { useUserSelection } from "../../app/providers/UserSelectionProvider";
 import ChartCard from "../../components/charts/ChartCard";
 import ActivityTrendLine from "../../components/charts/ActivityTrendLine";
 import CategoryPie from "../../components/charts/CategoryPie";
@@ -104,6 +105,10 @@ function defaultLast7() {
 }
 
 export default function Insights() {
+  const { selectedUser } = useUserSelection();
+  const selectedUserKey =
+    selectedUser?.company_username_norm || selectedUser?.company_username || "";
+
   const def = useMemo(() => defaultLast7(), []);
   const [from, setFrom] = useState(def.from);
   const [to, setTo] = useState(def.to);
@@ -113,12 +118,21 @@ export default function Insights() {
   const [dash, setDash] = useState(null);
   const [error, setError] = useState("");
 
-  const params = useMemo(() => ({ from: applied.from, to: applied.to }), [applied]);
+  const params = useMemo(
+    () => ({ from: applied.from, to: applied.to, user: selectedUserKey || undefined }),
+    [applied, selectedUserKey]
+  );
 
   useEffect(() => {
     let mounted = true;
 
     async function load() {
+      if (!selectedUserKey) {
+        setDash(null);
+        setLoading(false);
+        setError("Select a user to view insights");
+        return;
+      }
       setLoading(true);
       setError("");
       try {
