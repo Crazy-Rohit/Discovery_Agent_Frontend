@@ -129,7 +129,7 @@ export default function Overview() {
     <Box>
       <PageHeader
         title={selectedUserKey ? "User Overview" : "Overview"}
-        subtitle={selectedUserKey ? `Selected user: ${selectedUserKey}` : "Select a user to begin"}
+        //subtitle={selectedUserKey ? `Selected user: ${selectedUserKey}` : "Select a user to begin"}
         right={
           loading ? (
             <Chip

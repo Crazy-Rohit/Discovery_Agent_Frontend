@@ -323,7 +323,7 @@ export default function Insights() {
             />
           </ChartCard>
         </Grid>
-
+q
         <Grid item xs={12} lg={7}>
           <ChartCard title="Screenshots Over Time" subtitle="Screenshots per day">
             <ActivityTrendLine labels={charts.screenshots_over_time?.labels || []} series={charts.screenshots_over_time?.series || []} />
