@@ -436,7 +436,17 @@ export default function UserDetail() {
   const [logs, setLogs] = useState({ items: [], total: 0 });
   const [shots, setShots] = useState({ items: [], total: 0 });
 
-  const params = useMemo(() => ({ from: applied.from, to: applied.to }), [applied]);
+  
+
+  // Show-more (UI only): load in chunks
+  const LOGS_PAGE_SIZE = 100;
+  const SHOTS_PAGE_SIZE = 50;
+
+  const [logsPage, setLogsPage] = useState(1);
+  const [shotsPage, setShotsPage] = useState(1);
+  const [logsHasMore, setLogsHasMore] = useState(false);
+  const [shotsHasMore, setShotsHasMore] = useState(false);
+const params = useMemo(() => ({ from: applied.from, to: applied.to }), [applied]);
 
   // prevents selection-sync loops that cause repeated fetching elsewhere
   const lastSelectedKeyRef = useRef("");
@@ -474,18 +484,29 @@ export default function UserDetail() {
         setLogsLoading(true);
         setShotsLoading(true);
 
+        // reset paging on each load
+        setLogsPage(1);
+        setShotsPage(1);
+
         // IMPORTANT: keep original param names (company_username) to avoid breaking APIs
         const [aRes, lRes, sRes] = await Promise.allSettled([
           getUserAnalysisApi(userKey, params),
-          getLogs({ ...params, company_username: userKey, page: 1, limit: 200 }),
-          getScreenshots({ ...params, company_username: userKey, page: 1, limit: 200 }),
+          getLogs({ ...params, company_username: userKey, page: 1, limit: LOGS_PAGE_SIZE }),
+          getScreenshots({ ...params, company_username: userKey, page: 1, limit: SHOTS_PAGE_SIZE }),
         ]);
 
         if (!mounted) return;
 
         setAnalysis(aRes.status === "fulfilled" ? aRes.value : null);
-        setLogs(lRes.status === "fulfilled" ? normalizeListResponse(lRes.value) : { items: [], total: 0 });
-        setShots(sRes.status === "fulfilled" ? normalizeListResponse(sRes.value) : { items: [], total: 0 });
+        {
+        const logsNorm = lRes.status === "fulfilled" ? normalizeListResponse(lRes.value) : { items: [], total: 0 };
+        setLogs(logsNorm);
+        setLogsHasMore((logsNorm.items?.length || 0) < (logsNorm.total || 0));
+
+        const shotsNorm = sRes.status === "fulfilled" ? normalizeListResponse(sRes.value) : { items: [], total: 0 };
+        setShots(shotsNorm);
+        setShotsHasMore((shotsNorm.items?.length || 0) < (shotsNorm.total || 0));
+      }
 
         const errs = [aRes, lRes, sRes]
           .filter((x) => x.status === "rejected")
@@ -525,6 +546,70 @@ export default function UserDetail() {
     (tab === 0 && analysisLoading) ||
     (tab === 1 && logsLoading) ||
     (tab === 2 && shotsLoading);
+
+
+  async function loadMoreLogs() {
+    if (!user || logsLoading || !logsHasMore) return;
+    const routeKey = decodeURIComponent(company_username || "");
+    const userKey = user?.company_username_norm || user?.company_username || routeKey;
+    const nextPage = logsPage + 1;
+
+    setLogsLoading(true);
+    setError("");
+    try {
+      const res = await getLogs({ ...params, company_username: userKey, page: nextPage, limit: LOGS_PAGE_SIZE });
+      const norm = normalizeListResponse(res);
+
+      setLogs((prev) => {
+        const merged = [...(prev.items || []), ...(norm.items || [])];
+        return { items: merged, total: norm.total ?? prev.total ?? merged.length };
+      });
+
+      const currentCount = (logs.items?.length || 0) + (norm.items?.length || 0);
+      const total = norm.total ?? logs.total ?? currentCount;
+
+      setLogsPage(nextPage);
+      setLogsHasMore(currentCount < total);
+    } catch (e) {
+      setError(e?.message || "Failed to load more logs.");
+    } finally {
+      setLogsLoading(false);
+    }
+  }
+
+  async function loadMoreShots() {
+    if (!user || shotsLoading || !shotsHasMore) return;
+    const routeKey = decodeURIComponent(company_username || "");
+    const userKey = user?.company_username_norm || user?.company_username || routeKey;
+    const nextPage = shotsPage + 1;
+
+    setShotsLoading(true);
+    setError("");
+    try {
+      const res = await getScreenshots({
+        ...params,
+        company_username: userKey,
+        page: nextPage,
+        limit: SHOTS_PAGE_SIZE,
+      });
+      const norm = normalizeListResponse(res);
+
+      setShots((prev) => {
+        const merged = [...(prev.items || []), ...(norm.items || [])];
+        return { items: merged, total: norm.total ?? prev.total ?? merged.length };
+      });
+
+      const currentCount = (shots.items?.length || 0) + (norm.items?.length || 0);
+      const total = norm.total ?? shots.total ?? currentCount;
+
+      setShotsPage(nextPage);
+      setShotsHasMore(currentCount < total);
+    } catch (e) {
+      setError(e?.message || "Failed to load more screenshots.");
+    } finally {
+      setShotsLoading(false);
+    }
+  }
 
   return (
     <Box className="dash-page">
@@ -661,10 +746,26 @@ export default function UserDetail() {
       ) : tab === 1 ? (
         <Paper className="glass" elevation={0} sx={{ p: 2 }}>
           <LogsTable rows={logs?.items || []} />
+
+          {logsHasMore ? (
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+              <Button variant="outlined" onClick={loadMoreLogs} disabled={logsLoading} sx={{ fontWeight: 950 }}>
+                {logsLoading ? "Loading…" : "Show more (next 100)"}
+              </Button>
+            </Box>
+          ) : null}
         </Paper>
       ) : (
         <Paper className="glass" elevation={0} sx={{ p: 2 }}>
           <ScreenshotsSection rows={shots?.items || []} />
+
+          {shotsHasMore ? (
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+              <Button variant="outlined" onClick={loadMoreShots} disabled={shotsLoading} sx={{ fontWeight: 950 }}>
+                {shotsLoading ? "Loading…" : "Show more (next 50)"}
+              </Button>
+            </Box>
+          ) : null}
         </Paper>
       )}
     </Box>
