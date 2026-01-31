@@ -466,6 +466,7 @@ const params = useMemo(() => ({ from: applied.from, to: applied.to }), [applied]
         setUser(u);
 
         const userKey = u?.company_username_norm || u?.company_username || routeKey;
+        const userId = u?.user_mac_id || u?._id || "";
 
         // Only set selected user when it actually changes
         if (lastSelectedKeyRef.current !== userKey) {
@@ -490,9 +491,10 @@ const params = useMemo(() => ({ from: applied.from, to: applied.to }), [applied]
 
         // IMPORTANT: keep original param names (company_username) to avoid breaking APIs
         const [aRes, lRes, sRes] = await Promise.allSettled([
-          getUserAnalysisApi(userKey, params),
-          getLogs({ ...params, company_username: userKey, page: 1, limit: LOGS_PAGE_SIZE }),
-          getScreenshots({ ...params, company_username: userKey, page: 1, limit: SHOTS_PAGE_SIZE }),
+          // ✅ Use unique id for analysis to avoid merged results
+          getUserAnalysisApi(userId || userKey, params),
+          getLogs({ ...params, user_mac_id: userId || undefined, company_username: userKey, page: 1, limit: LOGS_PAGE_SIZE }),
+          getScreenshots({ ...params, user_mac_id: userId || undefined, company_username: userKey, page: 1, limit: SHOTS_PAGE_SIZE }),
         ]);
 
         if (!mounted) return;

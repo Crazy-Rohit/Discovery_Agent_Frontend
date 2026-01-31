@@ -237,21 +237,25 @@ export default function Users() {
   }, [users, deptFilter, q, sort, me]);
 
   function openUser(u) {
-    const email = u.company_username_norm || u.company_username;
-    if (!email) return;
+  const email = u.company_username_norm || u.company_username;
+  if (!email) return;
 
-    // persist selection so user-scoped pages unlock (Logs / Screenshots / Insights)
-    setSelectedUser({
-      company_username_norm: u.company_username_norm || email,
-      company_username: u.company_username || email,
-      full_name: u.full_name || "",
-      department: u.department || "",
-      user_mac_id: u.user_mac_id || "",
-      role_key: u.role_key || "",
-    });
+  const uid = u._id || u.user_mac_id || ""; // <-- THIS is the strict constraint
+  if (!uid) return;
 
-    nav(`/dashboard/users/${encodeURIComponent(email)}`);
-  }
+  setSelectedUser({
+    _id: uid,
+    user_mac_id: uid,
+    company_username_norm: u.company_username_norm || email,
+    company_username: u.company_username || email,
+    full_name: u.full_name || "",
+    department: u.department || "",
+    role_key: u.role_key || "",
+  });
+
+  nav(`/dashboard/users/${encodeURIComponent(email)}`);
+}
+
 
   function resetForm() {
     setForm({

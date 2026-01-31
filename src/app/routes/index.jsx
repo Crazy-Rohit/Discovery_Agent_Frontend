@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 import UserScopedRoute from "./UserScopedRoute";
 import DashboardLayout from "../layout/index.jsx";
+import { useAuth } from "../providers/AuthProvider";
 
 import Landing from "../../pages/landing/Landing.jsx";
 import Login from "../../pages/auth/Login.jsx";
@@ -14,6 +15,22 @@ import UserDetail from "../../pages/dashboard/UserDetail.jsx";
 import Insights from "../../pages/dashboard/Insights.jsx";
 import Settings from "../../pages/dashboard/Settings.jsx";
 import Profile from "../../pages/dashboard/Profile.jsx";
+
+
+function RoleGuard({ allowRoles, children }) {
+  const { me, loading } = useAuth();
+  const role = String(me?.role_key || me?.role || "").toUpperCase();
+
+  if (loading) return null;
+
+  if (!me) return <Navigate to="/login" replace />;
+
+  if (Array.isArray(allowRoles) && allowRoles.length > 0 && !allowRoles.includes(role)) {
+    return <Navigate to="/dashboard/overview" replace />;
+  }
+
+  return children;
+}
 
 function DashboardShell({ children }) {
   return (
@@ -39,13 +56,15 @@ export default function AppRoutes() {
         path="/dashboard/insights"
         element={
           <DashboardShell>
-            <UserScopedRoute><Insights /></UserScopedRoute>
+            <RoleGuard allowRoles={["C_SUITE", "DEPARTMENT_HEAD"]}>
+              <UserScopedRoute><Insights /></UserScopedRoute>
+            </RoleGuard>
           </DashboardShell>
         }
       />
 
-      <Route path="/dashboard/users" element={<DashboardShell><Users /></DashboardShell>} />
-      <Route path="/dashboard/users/:company_username" element={<DashboardShell><UserDetail /></DashboardShell>} />
+      <Route path="/dashboard/users" element={<DashboardShell><RoleGuard allowRoles={["C_SUITE", "DEPARTMENT_HEAD"]}><Users /></RoleGuard></DashboardShell>} />
+      <Route path="/dashboard/users/:company_username" element={<DashboardShell><RoleGuard allowRoles={["C_SUITE", "DEPARTMENT_HEAD"]}><UserDetail /></RoleGuard></DashboardShell>} />
 
       <Route path="/dashboard/profile" element={<DashboardShell><Profile /></DashboardShell>} />
 

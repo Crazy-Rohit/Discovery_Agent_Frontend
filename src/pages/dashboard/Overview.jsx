@@ -57,7 +57,7 @@ export default function Overview() {
 
   const scopeParams = useMemo(() => {
     if (role === "C_SUITE") return {};
-    if (role === "DEPARTMENT_HEAD") return { department: me?.department };
+    if (role === "DEPARTMENT_HEAD" || role === "DEPARTMENT_MEMBER") return { department: me?.department };
     return {};
   }, [role, me?.department]);
 
@@ -97,7 +97,7 @@ export default function Overview() {
         subtitle={
           role === "C_SUITE"
             ? "Organization-wide summary"
-            : role === "DEPARTMENT_HEAD"
+            : role === "DEPARTMENT_HEAD" || role === "DEPARTMENT_MEMBER"
             ? `Department summary: ${me?.department || "—"}`
             : "Summary"
         }

@@ -106,8 +106,8 @@ function defaultLast7() {
 
 export default function Insights() {
   const { selectedUser } = useUserSelection();
-  const selectedUserKey =
-    selectedUser?.company_username_norm || selectedUser?.company_username || "";
+  // IMPORTANT: use the unique user id (user_mac_id stored as _id) to avoid merged results.
+  const selectedUserKey = selectedUser?._id || selectedUser?.user_mac_id || "";
 
   const def = useMemo(() => defaultLast7(), []);
   const [from, setFrom] = useState(def.from);
